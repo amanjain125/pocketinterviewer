@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useAppState } from '@/hooks/useAppState';
 import { Button } from '@/components/ui/button';
-import { 
-  ArrowLeft, 
-  Zap, 
-  Target, 
+import {
+  ArrowLeft,
+  Zap,
+  Target,
   Clock,
   AlertTriangle,
   Volume2,
@@ -48,7 +48,7 @@ const modes = [
 ];
 
 export function ModesPage() {
-  const { navigateTo, user } = useAppState();
+  const { navigateTo, user, setInterviewConfig, startInterview } = useAppState();
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
 
   const canAccessModes = user?.plan === 'advanced' || user?.plan === 'full';
@@ -74,6 +74,19 @@ export function ModesPage() {
     );
   }
 
+  const handleStartMode = (modeId: string) => {
+    // Set interview config with the selected mode
+    setInterviewConfig({
+      type: modeId === 'stress' ? 'behavioral' : 'rapid_fire', // Default to appropriate type
+      difficulty: modeId === 'stress' ? 'hard' : 'medium', // Set appropriate difficulty
+      mode: modeId as 'stress' | 'distraction', // Set the mode
+      duration: modeId === 'stress' ? 5 : 4, // Set duration in minutes
+    });
+
+    // Start the interview
+    startInterview();
+  };
+
   return (
     <div className="min-h-screen bg-[#2B0B57] pt-24 pb-12 px-4 sm:px-8">
       <div className="max-w-4xl mx-auto">
@@ -98,7 +111,7 @@ export function ModesPage() {
             const isSelected = selectedMode === mode.id;
 
             return (
-              <div 
+              <div
                 key={mode.id}
                 className={`card-violet overflow-hidden transition-all duration-300 ${isSelected ? 'ring-2 ring-[#FF4EC2]' : ''}`}
               >
@@ -120,7 +133,7 @@ export function ModesPage() {
                         </span>
                       </div>
                       <p className="text-white/60 mb-4">{mode.description}</p>
-                      
+
                       <div className="flex flex-wrap gap-2 mb-4">
                         {mode.features.map((feature, i) => (
                           <span key={i} className="flex items-center gap-1 text-white/50 text-sm bg-white/5 px-3 py-1 rounded-full">
@@ -139,7 +152,7 @@ export function ModesPage() {
                     </div>
 
                     {/* Action */}
-                    <Button 
+                    <Button
                       onClick={() => setSelectedMode(isSelected ? null : mode.id)}
                       className={isSelected ? 'btn-primary' : 'btn-secondary'}
                     >
@@ -157,13 +170,16 @@ export function ModesPage() {
                         <span className="font-semibold">Mode Settings</span>
                       </div>
                       <p className="text-white/60 text-sm">
-                        This mode will simulate a high-pressure environment. You&apos;ll have limited time 
+                        This mode will simulate a high-pressure environment. You&apos;ll have limited time
                         to answer and may face unexpected interruptions.
                       </p>
                     </div>
-                    
+
                     <div className="flex gap-3">
-                      <Button className="btn-primary">
+                      <Button 
+                        onClick={() => handleStartMode(mode.id)}
+                        className="btn-primary"
+                      >
                         <Play className="w-4 h-4 mr-2" />
                         Start {mode.name}
                       </Button>

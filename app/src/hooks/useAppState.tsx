@@ -120,12 +120,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     authService.logout();
+    // Don't clear progress data on logout - keep it in localStorage
     setUser(null);
     setIsAuthenticated(false);
     setCurrentInterview(null);
     setInterviewConfig(null);
     setCurrentResume(null);
-    setProgressData(null);
+    // Keep progress data in state but clear user-specific data
     setCurrentPage('landing');
   }, []);
 
@@ -188,10 +189,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
         feedback: updatedInterview.feedback
       });
 
+      // Also save to localStorage for persistence
+      try {
+        const existingInterviews = JSON.parse(localStorage.getItem(`interviews_${user.id}`) || '[]');
+        existingInterviews.push(updatedInterview);
+        localStorage.setItem(`interviews_${user.id}`, JSON.stringify(existingInterviews));
+      } catch (error) {
+        console.error('Error saving interview to localStorage:', error);
+      }
+
       if (result.success) {
         setCurrentInterview(updatedInterview);
         setCurrentPage('progress');
-        
+
         // Reload progress data to reflect the new interview
         await loadProgressData();
       } else {
@@ -206,14 +216,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const loadProgressData = useCallback(async () => {
     if (user) {
       try {
-        // In a real implementation, you would fetch progress data from the server
-        // For now, we'll create mock data based on interview history
+        // Try to load from localStorage first
+        const savedProgress = localStorage.getItem(`progress_${user.id}`);
+        if (savedProgress) {
+          const parsedProgress = JSON.parse(savedProgress);
+          setProgressData(parsedProgress);
+          return;
+        }
+
+        // Try to fetch from service (simulated)
         const result = await interviewService.getUserInterviewHistory(user.id);
-        
-        if (result.success) {
-          // Calculate progress based on interview history
-          const totalInterviews = result.interviews.length;
-          const totalDuration = result.interviews.reduce((sum: number, interview: any) => {
+
+        // Get interviews from localStorage as fallback
+        const localStorageInterviews = JSON.parse(localStorage.getItem(`interviews_${user.id}`) || '[]');
+        const allInterviews = result.success ? [...result.interviews, ...localStorageInterviews] : localStorageInterviews;
+
+        if (allInterviews.length > 0) {
+          // Calculate progress based on all interviews (service + localStorage)
+          const totalInterviews = allInterviews.length;
+          const totalDuration = allInterviews.reduce((sum: number, interview: any) => {
             if (interview.startedAt && interview.endedAt) {
               const duration = (new Date(interview.endedAt).getTime() - new Date(interview.startedAt).getTime()) / (1000 * 60); // in minutes
               return sum + duration;
@@ -222,7 +243,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }, 0);
 
           // Calculate average scores
-          const avgScores = result.interviews.reduce((acc: { overall: number, confidence: number, communication: number, technical: number }, interview: any) => {
+          const avgScores = allInterviews.reduce((acc: { overall: number, confidence: number, communication: number, technical: number }, interview: any) => {
             if (interview.feedback) {
               acc.overall += interview.feedback.overallScore || 0;
               acc.confidence += interview.feedback.confidenceScore || 0;
@@ -231,14 +252,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
             return acc;
           }, { overall: 0, confidence: 0, communication: 0, technical: 0 });
-          
-          const count = result.interviews.length || 1;
+
+          const count = allInterviews.length || 1;
           const avgOverall = Math.round(avgScores.overall / count);
           const avgConfidence = Math.round(avgScores.confidence / count);
           const avgCommunication = Math.round(avgScores.communication / count);
           const avgTechnical = Math.round(avgScores.technical / count);
-          
-          const mockProgressData: ProgressData = {
+
+          const progressData: ProgressData = {
             totalInterviews,
             totalDuration: Math.round(totalDuration),
             currentStreak: user.streak,
@@ -250,33 +271,88 @@ export function AppProvider({ children }: { children: ReactNode }) {
               confidence: avgConfidence,
               relevance: avgOverall
             },
-            recentSessions: result.interviews.slice(0, 5), // Last 5 interviews
-            improvementTrend: result.interviews.map((interview: any) => ({
+            recentSessions: allInterviews.slice(0, 5), // Last 5 interviews
+            improvementTrend: allInterviews.map((interview: any) => ({
               date: new Date(interview.createdAt || interview.startedAt).toISOString().split('T')[0],
               score: interview.feedback?.overallScore || 70
             }))
           };
-          
-          setProgressData(mockProgressData);
+
+          // Save to localStorage
+          localStorage.setItem(`progress_${user.id}`, JSON.stringify(progressData));
+          setProgressData(progressData);
+        } else {
+          // If no interviews exist, try to load from localStorage or use default
+          const savedProgress = localStorage.getItem(`progress_${user.id}`);
+          if (savedProgress) {
+            const parsedProgress = JSON.parse(savedProgress);
+            setProgressData(parsedProgress);
+          } else {
+            // Default progress data
+            const defaultProgress: ProgressData = {
+              totalInterviews: 0,
+              totalDuration: 0,
+              currentStreak: user.streak,
+              longestStreak: user.streak,
+              weaknessRadar: {
+                clarity: 70,
+                structure: 70,
+                technicalDepth: 70,
+                confidence: 70,
+                relevance: 70
+              },
+              recentSessions: [],
+              improvementTrend: []
+            };
+            localStorage.setItem(`progress_${user.id}`, JSON.stringify(defaultProgress));
+            setProgressData(defaultProgress);
+          }
         }
       } catch (error) {
         console.error('Error loading progress data:', error);
-        // Set a default progress data
-        setProgressData({
-          totalInterviews: 0,
-          totalDuration: 0,
-          currentStreak: user.streak,
-          longestStreak: user.streak,
-          weaknessRadar: {
-            clarity: 70,
-            structure: 70,
-            technicalDepth: 70,
-            confidence: 70,
-            relevance: 70
-          },
-          recentSessions: [],
-          improvementTrend: []
-        });
+        // Try to load from localStorage as fallback
+        try {
+          const savedProgress = localStorage.getItem(`progress_${user.id}`);
+          if (savedProgress) {
+            const parsedProgress = JSON.parse(savedProgress);
+            setProgressData(parsedProgress);
+          } else {
+            // Final fallback
+            setProgressData({
+              totalInterviews: 0,
+              totalDuration: 0,
+              currentStreak: user.streak,
+              longestStreak: user.streak,
+              weaknessRadar: {
+                clarity: 70,
+                structure: 70,
+                technicalDepth: 70,
+                confidence: 70,
+                relevance: 70
+              },
+              recentSessions: [],
+              improvementTrend: []
+            });
+          }
+        } catch (localStorageError) {
+          console.error('Error with localStorage:', localStorageError);
+          // Ultimate fallback
+          setProgressData({
+            totalInterviews: 0,
+            totalDuration: 0,
+            currentStreak: user.streak,
+            longestStreak: user.streak,
+            weaknessRadar: {
+              clarity: 70,
+              structure: 70,
+              technicalDepth: 70,
+              confidence: 70,
+              relevance: 70
+            },
+            recentSessions: [],
+            improvementTrend: []
+          });
+        }
       }
     }
   }, [user]);

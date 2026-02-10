@@ -58,12 +58,27 @@ export function Navigation() {
       <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo */}
-          <button 
+          <button
             onClick={() => navigateTo('landing')}
             className="flex items-center gap-2 group"
           >
-            <div className="w-10 h-10 bg-[#4B2086] rounded-xl flex items-center justify-center text-2xl shadow-lg group-hover:scale-110 transition-transform">
-              💼
+            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform overflow-hidden">
+              <img 
+                src="/logo.png" 
+                alt="Pocket Interviewer Logo" 
+                className="w-8 h-8 object-contain"
+                onError={(e) => {
+                  // Fallback to emoji if image fails to load
+                  e.currentTarget.style.display = 'none';
+                  const parent = e.currentTarget.parentElement;
+                  if (parent) {
+                    const fallbackDiv = document.createElement('div');
+                    fallbackDiv.className = 'w-10 h-10 bg-[#4B2086] rounded-full flex items-center justify-center text-2xl shadow-lg group-hover:scale-110 transition-transform';
+                    fallbackDiv.textContent = '💼';
+                    parent.appendChild(fallbackDiv);
+                  }
+                }}
+              />
             </div>
             <span className="font-display font-bold text-lg text-white hidden sm:block">
               Pocket Interviewer
@@ -109,12 +124,27 @@ export function Navigation() {
       <div className="max-w-7xl mx-auto">
         <div className="glass rounded-2xl px-4 py-3 flex items-center justify-between">
           {/* Logo */}
-          <button 
+          <button
             onClick={() => navigateTo('dashboard')}
             className="flex items-center gap-2 group"
           >
-            <div className="w-9 h-9 bg-[#4B2086] rounded-xl flex items-center justify-center text-xl shadow-lg group-hover:scale-110 transition-transform">
-              💼
+            <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform overflow-hidden">
+              <img 
+                src="/logo.png" 
+                alt="Pocket Interviewer Logo" 
+                className="w-7 h-7 object-contain"
+                onError={(e) => {
+                  // Fallback to emoji if image fails to load
+                  e.currentTarget.style.display = 'none';
+                  const parent = e.currentTarget.parentElement;
+                  if (parent) {
+                    const fallbackDiv = document.createElement('div');
+                    fallbackDiv.className = 'w-9 h-9 bg-[#4B2086] rounded-full flex items-center justify-center text-xl shadow-lg group-hover:scale-110 transition-transform';
+                    fallbackDiv.textContent = '💼';
+                    parent.appendChild(fallbackDiv);
+                  }
+                }}
+              />
             </div>
             <span className="font-display font-bold text-white hidden lg:block">
               Pocket Interviewer

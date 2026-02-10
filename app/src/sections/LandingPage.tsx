@@ -232,8 +232,23 @@ export function LandingPage() {
             <div className="absolute inset-0 gradient-blob opacity-30 animate-blob-drift" />
             
             <div className="relative z-10 text-center">
-              <div className="text-[150px] sm:text-[180px] leading-none animate-float-slow">
-                💼
+              <div className="w-40 h-40 sm:w-48 sm:h-48 mx-auto rounded-full bg-white flex items-center justify-center animate-float-slow overflow-hidden shadow-lg">
+                <img 
+                  src="/logo.png" 
+                  alt="Pocket Interviewer Logo" 
+                  className="w-32 h-32 sm:w-40 sm:h-40 object-contain"
+                  onError={(e) => {
+                    // Fallback to emoji if image fails to load
+                    e.currentTarget.style.display = 'none';
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) {
+                      const fallbackDiv = document.createElement('div');
+                      fallbackDiv.className = 'text-[150px] sm:text-[180px] leading-none animate-float-slow';
+                      fallbackDiv.textContent = '💼';
+                      parent.appendChild(fallbackDiv);
+                    }
+                  }}
+                />
               </div>
               <div className="absolute top-8 right-8 text-5xl animate-rotate-slow">
                 ✨

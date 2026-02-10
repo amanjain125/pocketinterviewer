@@ -13,63 +13,6 @@ import {
   Download
 } from 'lucide-react';
 
-// Mock interview history
-const mockInterviewHistory = [
-  {
-    id: '1',
-    type: 'behavioral',
-    difficulty: 'medium',
-    date: '2024-01-29',
-    duration: 4,
-    score: 82,
-    feedback: {
-      overallScore: 82,
-      confidenceScore: 78,
-      communicationScore: 85,
-      technicalScore: 80,
-      strengths: ['Clear articulation', 'Good examples', 'Structured answers'],
-      improvements: ['Add more metrics', 'Be more concise'],
-      summary: 'Strong performance with well-structured responses.',
-      weaknessRadar: { clarity: 85, structure: 80, technicalDepth: 75, confidence: 78, relevance: 88 },
-    },
-  },
-  {
-    id: '2',
-    type: 'technical',
-    difficulty: 'hard',
-    date: '2024-01-27',
-    duration: 6,
-    score: 75,
-    feedback: {
-      overallScore: 75,
-      confidenceScore: 70,
-      communicationScore: 78,
-      technicalScore: 82,
-      strengths: ['Strong technical knowledge', 'Good problem breakdown'],
-      improvements: ['Explain trade-offs better', 'Practice edge cases'],
-      summary: 'Good technical depth but could improve communication of complex concepts.',
-      weaknessRadar: { clarity: 72, structure: 78, technicalDepth: 85, confidence: 70, relevance: 82 },
-    },
-  },
-  {
-    id: '3',
-    type: 'rapid_fire',
-    difficulty: 'easy',
-    date: '2024-01-25',
-    duration: 3,
-    score: 88,
-    feedback: {
-      overallScore: 88,
-      confidenceScore: 90,
-      communicationScore: 86,
-      technicalScore: 85,
-      strengths: ['Quick thinking', 'Confident delivery', 'Clear answers'],
-      improvements: ['Elaborate more when needed'],
-      summary: 'Excellent quick responses with high confidence.',
-      weaknessRadar: { clarity: 90, structure: 85, technicalDepth: 82, confidence: 90, relevance: 88 },
-    },
-  },
-];
 
 export function ProgressPage() {
   const { navigateTo, progressData } = useAppState();
@@ -134,7 +77,9 @@ export function ProgressPage() {
               <span className="text-white/60 text-sm">Avg Score</span>
             </div>
             <p className="text-3xl text-white font-display font-bold">
-              {Math.round(mockInterviewHistory.reduce((acc, i) => acc + i.score, 0) / mockInterviewHistory.length)}%
+              {progressData?.recentSessions && progressData.recentSessions.length > 0 
+                ? Math.round(progressData.recentSessions.reduce((acc: number, session: any) => acc + (session.score || 0), 0) / progressData.recentSessions.length)
+                : 0}%
             </p>
           </div>
 
@@ -151,56 +96,79 @@ export function ProgressPage() {
           </div>
         </div>
 
-        {/* Weakness Radar */}
+        {/* Skill Performance Gauges */}
         <div className="card-violet p-6 mb-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center">
-              <Target className="w-5 h-5 text-red-400" />
+            <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
+              <Target className="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <h3 className="text-white font-semibold">Weakness Radar</h3>
-              <p className="text-white/50 text-sm">Areas to focus on</p>
+              <h3 className="text-white font-semibold">Skill Performance</h3>
+              <p className="text-white/50 text-sm">Real-time skill assessment</p>
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {[
-              { label: 'Clarity', value: progressData?.weaknessRadar.clarity || 75 },
-              { label: 'Structure', value: progressData?.weaknessRadar.structure || 68 },
-              { label: 'Technical Depth', value: progressData?.weaknessRadar.technicalDepth || 82 },
-              { label: 'Confidence', value: progressData?.weaknessRadar.confidence || 70 },
-              { label: 'Relevance', value: progressData?.weaknessRadar.relevance || 85 },
-            ].map((item) => (
-              <div key={item.label} className="text-center">
-                <div className="relative w-20 h-20 mx-auto mb-2">
-                  <svg className="w-full h-full transform -rotate-90">
-                    <circle
-                      cx="40"
-                      cy="40"
-                      r="36"
-                      fill="none"
-                      stroke="rgba(255,255,255,0.1)"
-                      strokeWidth="6"
-                    />
-                    <circle
-                      cx="40"
-                      cy="40"
-                      r="36"
-                      fill="none"
-                      stroke="#FF4EC2"
-                      strokeWidth="6"
-                      strokeLinecap="round"
-                      strokeDasharray={`${(item.value / 100) * 226} 226`}
-                      className="transition-all duration-1000"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-white font-bold">{item.value}%</span>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            {Object.entries(progressData?.weaknessRadar || {}).map(([skill, value], _index) => {
+              const skillLabels: Record<string, string> = {
+                clarity: 'Clarity',
+                structure: 'Structure',
+                technicalDepth: 'Technical Depth',
+                confidence: 'Confidence',
+                relevance: 'Relevance'
+              };
+              
+              const skillColors: Record<string, string> = {
+                clarity: '#818cf8',
+                structure: '#60a5fa',
+                technicalDepth: '#34d399',
+                confidence: '#fbbf24',
+                relevance: '#f87171'
+              };
+              
+              const label = skillLabels[skill] || skill;
+              const color = skillColors[skill] || '#818cf8';
+              
+              return (
+                <div key={skill} className="flex flex-col items-center">
+                  <h4 className="text-white font-medium mb-3">{label}</h4>
+                  
+                  {/* Circular gauge visualization */}
+                  <div className="relative w-24 h-24 flex items-center justify-center">
+                    {/* Background circle */}
+                    <div className="absolute w-full h-full rounded-full border-4 border-gray-700"></div>
+                    
+                    {/* Progress circle */}
+                    <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 100 100">
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        fill="none"
+                        stroke="#1e293b"
+                        strokeWidth="8"
+                      />
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        fill="none"
+                        stroke={color}
+                        strokeWidth="8"
+                        strokeLinecap="round"
+                        strokeDasharray={`${(Number(value) / 100) * 283}, 283`}
+                        transform="rotate(-90 50 50)"
+                      />
+                    </svg>
+                    
+                    {/* Value indicator */}
+                    <div className="relative z-10 text-center">
+                      <span className="text-lg font-bold text-white">{value}%</span>
+                    </div>
                   </div>
                 </div>
-                <p className="text-white/60 text-sm">{item.label}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -208,39 +176,39 @@ export function ProgressPage() {
         <div>
           <h2 className="text-xl text-white font-semibold mb-4">Interview History</h2>
           <div className="space-y-4">
-            {mockInterviewHistory.map((interview) => {
+            {(progressData?.recentSessions || []).map((interview: any) => {
               const isExpanded = expandedInterview === interview.id;
 
               return (
-                <div key={interview.id} className="card-violet overflow-hidden">
+                <div key={interview.id || Math.random()} className="card-violet overflow-hidden">
                   {/* Summary Row */}
                   <button
                     onClick={() => setExpandedInterview(isExpanded ? null : interview.id)}
                     className="w-full p-6 flex items-center justify-between hover:bg-white/5 transition-colors"
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${getDifficultyColor(interview.difficulty)}`}>
-                        <span className="text-xl font-bold">{interview.score}</span>
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${getDifficultyColor(interview.difficulty || 'medium')}`}>
+                        <span className="text-xl font-bold">{interview.score || 0}</span>
                       </div>
                       <div className="text-left">
                         <h3 className="text-white font-semibold">
-                          {getTypeLabel(interview.type)} Interview
+                          {getTypeLabel(interview.config?.type || 'behavioral')} Interview
                         </h3>
                         <p className="text-white/50 text-sm">
-                          {new Date(interview.date).toLocaleDateString('en-US', { 
-                            month: 'short', 
+                          {interview.date ? new Date(interview.date).toLocaleDateString('en-US', {
+                            month: 'short',
                             day: 'numeric',
                             year: 'numeric'
-                          })} • {interview.duration} min • {interview.difficulty}
+                          }) : 'Unknown date'} • {interview.duration || 0} min • {interview.config?.difficulty || 'medium'}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1">
                         {[...Array(5)].map((_, i) => (
-                          <Star 
-                            key={i} 
-                            className={`w-4 h-4 ${i < Math.round(interview.score / 20) ? 'text-yellow-400 fill-yellow-400' : 'text-white/20'}`} 
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${i < Math.round((interview.score || 0) / 20) ? 'text-yellow-400 fill-yellow-400' : 'text-white/20'}`}
                           />
                         ))}
                       </div>
@@ -261,18 +229,18 @@ export function ProgressPage() {
                           <h4 className="text-white font-semibold mb-3">Scores</h4>
                           <div className="space-y-3">
                             {[
-                              { label: 'Overall', value: interview.feedback.overallScore },
-                              { label: 'Confidence', value: interview.feedback.confidenceScore },
-                              { label: 'Communication', value: interview.feedback.communicationScore },
-                              { label: 'Technical', value: interview.feedback.technicalScore },
-                            ].map((score) => (
+                              { label: 'Overall', value: interview.feedback?.overallScore },
+                              { label: 'Confidence', value: interview.feedback?.confidenceScore },
+                              { label: 'Communication', value: interview.feedback?.communicationScore },
+                              { label: 'Technical', value: interview.feedback?.technicalScore },
+                            ].filter(score => score.value !== undefined).map((score) => (
                               <div key={score.label}>
                                 <div className="flex justify-between text-sm mb-1">
                                   <span className="text-white/60">{score.label}</span>
                                   <span className="text-white">{score.value}%</span>
                                 </div>
                                 <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                                  <div 
+                                  <div
                                     className="h-full bg-gradient-to-r from-[#FF4EC2] to-[#ff8ad8] rounded-full"
                                     style={{ width: `${score.value}%` }}
                                   />
@@ -286,7 +254,7 @@ export function ProgressPage() {
                         <div>
                           <h4 className="text-white font-semibold mb-3">Strengths</h4>
                           <ul className="space-y-2 mb-4">
-                            {interview.feedback.strengths.map((strength, i) => (
+                            {(interview.feedback?.strengths || []).map((strength: string, i: number) => (
                               <li key={i} className="flex items-center gap-2 text-green-400 text-sm">
                                 <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
                                 {strength}
@@ -296,7 +264,7 @@ export function ProgressPage() {
 
                           <h4 className="text-white font-semibold mb-3">Areas to Improve</h4>
                           <ul className="space-y-2">
-                            {interview.feedback.improvements.map((improvement, i) => (
+                            {(interview.feedback?.improvements || []).map((improvement: string, i: number) => (
                               <li key={i} className="flex items-center gap-2 text-orange-400 text-sm">
                                 <span className="w-1.5 h-1.5 bg-orange-400 rounded-full" />
                                 {improvement}
@@ -308,12 +276,122 @@ export function ProgressPage() {
 
                       {/* Summary */}
                       <div className="mt-4 p-4 bg-white/5 rounded-xl">
-                        <p className="text-white/80 text-sm">{interview.feedback.summary}</p>
+                        <p className="text-white/80 text-sm">{interview.feedback?.summary || 'No summary available'}</p>
                       </div>
 
                       {/* Actions */}
                       <div className="flex gap-3 mt-4">
-                        <Button variant="outline" className="btn-secondary text-sm">
+                        <Button 
+                          variant="outline" 
+                          className="btn-secondary text-sm"
+                          onClick={async () => {
+                            // Dynamically import jsPDF to avoid bundling issues
+                            const { jsPDF } = await import('jspdf');
+                            const doc = new jsPDF();
+
+                            // Add title
+                            doc.setFontSize(22);
+                            doc.setTextColor(129, 140, 248); // Indigo color
+                            doc.text('Interview Performance Report', 20, 20);
+
+                            // Add interview details
+                            doc.setFontSize(16);
+                            doc.setTextColor(0, 0, 0); // Black
+                            doc.text('Interview Details', 20, 40);
+
+                            doc.setFontSize(12);
+                            doc.text(`Type: ${(interview.config?.type || 'N/A').replace('_', ' ')}`, 20, 50);
+                            doc.text(`Difficulty: ${interview.config?.difficulty || 'N/A'}`, 20, 58);
+                            doc.text(`Date: ${interview.date ? new Date(interview.date).toLocaleDateString() : 'N/A'}`, 20, 66);
+                            doc.text(`Duration: ${interview.duration || 0} minutes`, 20, 74);
+                            doc.text(`Score: ${interview.score || 0}%`, 20, 82);
+
+                            // Add scores section
+                            let yPos = 95;
+                            doc.setFontSize(16);
+                            doc.text('Scores', 20, yPos);
+                            yPos += 10;
+
+                            doc.setFontSize(12);
+                            doc.text(`Overall: ${interview.feedback?.overallScore || 0}%`, 20, yPos);
+                            yPos += 8;
+                            doc.text(`Confidence: ${interview.feedback?.confidenceScore || 0}%`, 20, yPos);
+                            yPos += 8;
+                            doc.text(`Communication: ${interview.feedback?.communicationScore || 0}%`, 20, yPos);
+                            yPos += 8;
+                            doc.text(`Technical: ${interview.feedback?.technicalScore || 0}%`, 20, yPos);
+                            yPos += 15;
+
+                            // Add strengths section
+                            doc.setFontSize(16);
+                            doc.text('Strengths', 20, yPos);
+                            yPos += 10;
+
+                            doc.setFontSize(12);
+                            (interview.feedback?.strengths || []).forEach((strength: string) => {
+                              if (yPos > 270) { // Check if we need a new page
+                                doc.addPage();
+                                yPos = 20;
+                              }
+                              doc.text(`• ${strength}`, 20, yPos);
+                              yPos += 8;
+                            });
+                            yPos += 10;
+
+                            // Add areas for improvement section
+                            doc.setFontSize(16);
+                            doc.text('Areas for Improvement', 20, yPos);
+                            yPos += 10;
+
+                            doc.setFontSize(12);
+                            (interview.feedback?.improvements || []).forEach((improvement: string) => {
+                              if (yPos > 270) { // Check if we need a new page
+                                doc.addPage();
+                                yPos = 20;
+                              }
+                              doc.text(`• ${improvement}`, 20, yPos);
+                              yPos += 8;
+                            });
+                            yPos += 10;
+
+                            // Add summary
+                            doc.setFontSize(16);
+                            doc.text('Summary', 20, yPos);
+                            yPos += 10;
+
+                            doc.setFontSize(12);
+                            const summaryText = interview.feedback?.summary || 'No summary available';
+                            const summaryLines = doc.splitTextToSize(summaryText, 170);
+                            summaryLines.forEach((line: string) => {
+                              if (yPos > 270) { // Check if we need a new page
+                                doc.addPage();
+                                yPos = 20;
+                              }
+                              doc.text(line, 20, yPos);
+                              yPos += 8;
+                            });
+                            yPos += 10;
+
+                            // Add skill breakdown
+                            doc.setFontSize(16);
+                            doc.text('Skill Breakdown', 20, yPos);
+                            yPos += 10;
+
+                            doc.setFontSize(12);
+                            doc.text(`Clarity: ${interview.feedback?.weaknessRadar?.clarity || 0}%`, 20, yPos);
+                            yPos += 8;
+                            doc.text(`Structure: ${interview.feedback?.weaknessRadar?.structure || 0}%`, 20, yPos);
+                            yPos += 8;
+                            doc.text(`Technical Depth: ${interview.feedback?.weaknessRadar?.technicalDepth || 0}%`, 20, yPos);
+                            yPos += 8;
+                            doc.text(`Confidence: ${interview.feedback?.weaknessRadar?.confidence || 0}%`, 20, yPos);
+                            yPos += 8;
+                            doc.text(`Relevance: ${interview.feedback?.weaknessRadar?.relevance || 0}%`, 20, yPos);
+
+                            // Save the PDF
+                            doc.save(`interview-report-${interview.id || Date.now()}.pdf`);
+                          }}
+                        >
                           <Download className="w-4 h-4 mr-2" />
                           Download Report
                         </Button>

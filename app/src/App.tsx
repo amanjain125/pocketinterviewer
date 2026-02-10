@@ -74,7 +74,7 @@ function AppContent() {
   return (
     <div ref={mainRef} className="relative min-h-screen bg-[#2B0B57]">
       <NoiseOverlay />
-      
+
       {/* Entry Animation */}
       {showEntry && currentPage === 'landing' && !isAuthenticated && (
         <EntryAnimation onComplete={() => setShowEntry(false)} />

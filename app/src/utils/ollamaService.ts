@@ -14,17 +14,11 @@ interface OllamaRequest {
   };
 }
 
-interface OllamaResponse {
-  response: string;
-  model: string;
-  created_at: string;
-  done: boolean;
-}
 
 export const analyzeAnswerWithOllama = async (
-  question: string, 
+  question: string,
   answer: string,
-  model: string = 'llama3:8b'  // Using llama3:8b as an alternative to llama3.2:3b
+  model: string = 'llama3.2:3b'  // Using llama3.2:3b which is efficient for conversation
 ): Promise<InterviewFeedback> => {
   try {
     const prompt = `
@@ -77,17 +71,17 @@ export const analyzeAnswerWithOllama = async (
       throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
     }
 
-    const data: OllamaResponse = await response.json();
+    const data = await response.json();
 
     // Parse the response to extract the feedback object
-    const feedbackText = data.response;
-    
+    const feedbackText = data.response || data.generated;
+
     // Extract JSON from the response (sometimes Ollama returns extra text)
     const jsonMatch = feedbackText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error('Could not parse feedback from Ollama response');
+      throw new Error('Could not parse feedback from Ollama response: ' + feedbackText);
     }
-    
+
     const feedback: InterviewFeedback = JSON.parse(jsonMatch[0]);
     return feedback;
   } catch (error) {

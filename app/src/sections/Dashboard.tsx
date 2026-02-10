@@ -216,36 +216,61 @@ export function Dashboard() {
 
           {/* Right Column - Weakness Radar & Recent */}
           <div className="space-y-6">
-            {/* Weakness Radar */}
+            {/* Skill Performance Gauges */}
             <div className="card-violet p-6">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center">
-                  <Target className="w-5 h-5 text-red-400" />
+                <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                  <Target className="w-5 h-5 text-blue-400" />
                 </div>
                 <div>
-                  <h3 className="text-white font-semibold">Weakness Radar</h3>
-                  <p className="text-white/50 text-sm">Areas to improve</p>
+                  <h3 className="text-white font-semibold">Skill Performance</h3>
+                  <p className="text-white/50 text-sm">Real-time skill assessment</p>
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-6">
                 {[
                   { label: 'Clarity', value: progressData?.weaknessRadar.clarity || 75 },
                   { label: 'Structure', value: progressData?.weaknessRadar.structure || 68 },
                   { label: 'Technical Depth', value: progressData?.weaknessRadar.technicalDepth || 82 },
                   { label: 'Confidence', value: progressData?.weaknessRadar.confidence || 70 },
                   { label: 'Relevance', value: progressData?.weaknessRadar.relevance || 85 },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-white/70">{item.label}</span>
-                      <span className="text-white font-medium">{item.value}%</span>
-                    </div>
-                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-[#FF4EC2] to-[#ff8ad8] rounded-full transition-all duration-1000"
-                        style={{ width: `${item.value}%` }}
-                      />
+                ].map((item, index) => (
+                  <div key={item.label} className="flex flex-col items-center">
+                    <h4 className="text-white font-medium mb-2">{item.label}</h4>
+                    
+                    {/* Circular gauge visualization */}
+                    <div className="relative w-20 h-20 flex items-center justify-center">
+                      {/* Background circle */}
+                      <div className="absolute w-full h-full rounded-full border-4 border-gray-700"></div>
+                      
+                      {/* Progress circle */}
+                      <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 100 100">
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="45"
+                          fill="none"
+                          stroke="#1e293b"
+                          strokeWidth="8"
+                        />
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="45"
+                          fill="none"
+                          stroke={index === 0 ? "#818cf8" : index === 1 ? "#60a5fa" : index === 2 ? "#34d399" : index === 3 ? "#fbbf24" : "#f87171"}
+                          strokeWidth="8"
+                          strokeLinecap="round"
+                          strokeDasharray={`${(item.value / 100) * 283}, 283`}
+                          transform="rotate(-90 50 50)"
+                        />
+                      </svg>
+                      
+                      {/* Value indicator */}
+                      <div className="relative z-10 text-center">
+                        <span className="text-sm font-bold text-white">{item.value}%</span>
+                      </div>
                     </div>
                   </div>
                 ))}

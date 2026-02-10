@@ -178,6 +178,20 @@
   background: #FF4EC2;
 }
 
+/* Distraction mode effect */
+.distraction-active {
+  animation: distraction-pulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes distraction-pulse {
+  0% {
+    filter: brightness(1) hue-rotate(0deg);
+  }
+  100% {
+    filter: brightness(1.1) hue-rotate(5deg);
+  }
+}
+
 /* Selection styling */
 ::selection {
   background: rgba(255, 78, 194, 0.4);
