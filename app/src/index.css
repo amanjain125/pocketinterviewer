@@ -34,17 +34,17 @@
   * {
     @apply border-border;
   }
-  
+
   html {
     scroll-behavior: auto;
   }
-  
+
   body {
     @apply bg-[#2B0B57] text-white antialiased;
     font-family: 'Inter', sans-serif;
     overflow-x: hidden;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Poppins', sans-serif;
     font-weight: 800;
@@ -58,32 +58,32 @@
   .card-violet {
     @apply bg-[#4B2086] rounded-[28px] shadow-[0_28px_70px_rgba(0,0,0,0.35)] border border-white/10;
   }
-  
+
   .card-violet-dark {
     @apply bg-[#2B0B57] rounded-[28px] shadow-[0_28px_70px_rgba(0,0,0,0.35)] border border-white/10;
   }
-  
+
   .btn-primary {
-    @apply bg-[#FF4EC2] text-white font-semibold px-8 py-4 rounded-full 
-           hover:bg-[#ff6fd1] transition-all duration-300 
+    @apply bg-[#FF4EC2] text-white font-semibold px-8 py-4 rounded-full
+           hover:bg-[#ff6fd1] transition-all duration-300
            shadow-[0_8px_30px_rgba(255,78,194,0.4)] hover:shadow-[0_12px_40px_rgba(255,78,194,0.5)]
            hover:scale-105 active:scale-95;
   }
-  
+
   .btn-secondary {
-    @apply bg-white/10 text-white font-medium px-6 py-3 rounded-full 
+    @apply bg-white/10 text-white font-medium px-6 py-3 rounded-full
            hover:bg-white/20 transition-all duration-300
            border border-white/20;
   }
-  
+
   .text-gradient {
     @apply bg-gradient-to-r from-[#FF4EC2] to-[#ff8ad8] bg-clip-text text-transparent;
   }
-  
+
   .gradient-blob {
     background: radial-gradient(circle at 30% 40%, rgba(255,78,194,0.28), transparent 55%);
   }
-  
+
   .noise-overlay {
     position: fixed;
     top: 0;
@@ -96,11 +96,11 @@
     mix-blend-mode: overlay;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
   }
-  
+
   .section-pinned {
     @apply w-screen h-screen relative overflow-hidden;
   }
-  
+
   .section-flowing {
     @apply w-full relative;
   }
@@ -110,31 +110,31 @@
   .font-display {
     font-family: 'Poppins', sans-serif;
   }
-  
+
   .font-body {
     font-family: 'Inter', sans-serif;
   }
-  
+
   .font-mono {
     font-family: 'Space Mono', monospace;
   }
-  
+
   .animate-float {
     animation: float 3s ease-in-out infinite;
   }
-  
+
   .animate-float-slow {
     animation: float 4s ease-in-out infinite;
   }
-  
+
   .animate-pulse-soft {
     animation: pulse-soft 2.2s ease-in-out infinite;
   }
-  
+
   .animate-rotate-slow {
     animation: rotate-slow 6s ease-in-out infinite;
   }
-  
+
   .animate-blob-drift {
     animation: blob-drift 8s ease-in-out infinite;
   }

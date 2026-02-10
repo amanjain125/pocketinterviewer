@@ -1,21 +1,22 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import type { 
-  User, 
-  Domain, 
-  PlanType, 
-  InterviewConfig, 
-  InterviewSession, 
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import type {
+  User,
+  Domain,
+  PlanType,
+  InterviewConfig,
+  InterviewSession,
   InterviewFeedback,
   ProgressData,
   Page,
   Resume
 } from '@/types';
+import { authService, interviewService } from '@/services/api';
 
 interface AppState {
   // Navigation
   currentPage: Page;
   navigateTo: (page: Page) => void;
-  
+
   // User
   user: User | null;
   isAuthenticated: boolean;
@@ -24,21 +25,22 @@ interface AppState {
   logout: () => void;
   setDomain: (domain: Domain) => void;
   upgradePlan: (plan: PlanType) => void;
-  
+
   // Interview
   currentInterview: InterviewSession | null;
   interviewConfig: InterviewConfig | null;
   setInterviewConfig: (config: InterviewConfig) => void;
   startInterview: () => void;
   endInterview: (feedback: InterviewFeedback) => void;
-  
+
   // Progress
   progressData: ProgressData | null;
-  
+  loadProgressData: () => Promise<void>;
+
   // Resume
   currentResume: Resume | null;
   setResume: (resume: Resume) => void;
-  
+
   // UI State
   showDomainSelect: boolean;
   setShowDomainSelect: (show: boolean) => void;
@@ -48,61 +50,40 @@ interface AppState {
 
 const AppContext = createContext<AppState | undefined>(undefined);
 
-// Mock data for demonstration
-const mockUser: User = {
-  id: '1',
-  name: 'Alex Johnson',
-  email: 'alex@example.com',
-  profession: 'college_student',
-  domain: 'computer_science',
-  plan: 'freemium',
-  streak: 5,
-  joinedAt: new Date(),
-};
-
-const mockProgressData: ProgressData = {
-  totalInterviews: 12,
-  totalDuration: 45,
-  currentStreak: 5,
-  longestStreak: 8,
-  weaknessRadar: {
-    clarity: 75,
-    structure: 68,
-    technicalDepth: 82,
-    confidence: 70,
-    relevance: 85,
-  },
-  recentSessions: [],
-  improvementTrend: [
-    { date: '2024-01-01', score: 65 },
-    { date: '2024-01-08', score: 70 },
-    { date: '2024-01-15', score: 72 },
-    { date: '2024-01-22', score: 78 },
-    { date: '2024-01-29', score: 82 },
-  ],
-};
-
 export function AppProvider({ children }: { children: ReactNode }) {
   // Navigation
   const [currentPage, setCurrentPage] = useState<Page>('landing');
-  
+
   // User
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
+
   // Interview
   const [currentInterview, setCurrentInterview] = useState<InterviewSession | null>(null);
   const [interviewConfig, setInterviewConfig] = useState<InterviewConfig | null>(null);
-  
+
   // Progress
-  const [progressData] = useState<ProgressData | null>(mockProgressData);
-  
+  const [progressData, setProgressData] = useState<ProgressData | null>(null);
+
   // Resume
   const [currentResume, setCurrentResume] = useState<Resume | null>(null);
-  
+
   // UI State
   const [showDomainSelect, setShowDomainSelect] = useState(false);
   const [showInterviewSetup, setShowInterviewSetup] = useState(false);
+
+  // Load user from localStorage on app start
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const currentUser = await authService.getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+        setIsAuthenticated(true);
+      }
+    };
+
+    initializeAuth();
+  }, []);
 
   const navigateTo = useCallback((page: Page) => {
     setCurrentPage(page);
@@ -110,61 +91,75 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    // Mock login - in real app, call API
-    if (email && password) {
-      setUser(mockUser);
+    const result = await authService.login({ email, password });
+    
+    if (result.success) {
+      setUser(result.user);
       setIsAuthenticated(true);
       setCurrentPage('dashboard');
       return true;
+    } else {
+      console.error('Login failed:', result.message);
+      return false;
     }
-    return false;
   }, []);
 
   const signup = useCallback(async (name: string, email: string, profession: string, password: string): Promise<boolean> => {
-    // Mock signup - in real app, call API
-    if (name && email && profession && password) {
-      const newUser: User = {
-        ...mockUser,
-        name,
-        email,
-        profession: profession as any,
-      };
-      setUser(newUser);
+    const result = await authService.register({ name, email, profession, password });
+    
+    if (result.success) {
+      setUser(result.user);
       setIsAuthenticated(true);
       setShowDomainSelect(true);
       return true;
+    } else {
+      console.error('Signup failed:', result.message);
+      return false;
     }
-    return false;
   }, []);
 
   const logout = useCallback(() => {
+    authService.logout();
     setUser(null);
     setIsAuthenticated(false);
     setCurrentInterview(null);
     setInterviewConfig(null);
     setCurrentResume(null);
+    setProgressData(null);
     setCurrentPage('landing');
   }, []);
 
-  const setDomain = useCallback((domain: Domain) => {
+  const setDomain = useCallback(async (domain: Domain) => {
     if (user) {
-      setUser({ ...user, domain });
-      setShowDomainSelect(false);
-      setCurrentPage('dashboard');
+      try {
+        // In a real implementation, you would update the user's domain on the server
+        const updatedUser = { ...user, domain };
+        setUser(updatedUser);
+        setShowDomainSelect(false);
+        setCurrentPage('dashboard');
+      } catch (error) {
+        console.error('Error updating domain:', error);
+      }
     }
   }, [user]);
 
-  const upgradePlan = useCallback((plan: PlanType) => {
+  const upgradePlan = useCallback(async (plan: PlanType) => {
     if (user) {
-      setUser({ ...user, plan });
+      try {
+        // In a real implementation, you would update the user's plan on the server
+        const updatedUser = { ...user, plan };
+        setUser(updatedUser);
+      } catch (error) {
+        console.error('Error upgrading plan:', error);
+      }
     }
   }, [user]);
 
   const startInterview = useCallback(() => {
-    if (interviewConfig) {
+    if (interviewConfig && user) {
       const newSession: InterviewSession = {
         id: Date.now().toString(),
-        userId: user?.id || 'guest',
+        userId: user.id,
         config: interviewConfig,
         questions: [],
         answers: [],
@@ -175,16 +170,116 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [interviewConfig, user]);
 
-  const endInterview = useCallback((feedback: InterviewFeedback) => {
-    if (currentInterview) {
-      setCurrentInterview({
+  const endInterview = useCallback(async (feedback: InterviewFeedback) => {
+    if (currentInterview && user) {
+      // Update the interview session with end time and feedback
+      const updatedInterview: InterviewSession = {
         ...currentInterview,
         endedAt: new Date(),
         feedback,
+      };
+
+      // Save the interview to the database
+      const result = await interviewService.saveInterview({
+        userId: user.id,
+        config: updatedInterview.config,
+        questions: updatedInterview.questions,
+        answers: updatedInterview.answers,
+        feedback: updatedInterview.feedback
       });
-      setCurrentPage('progress');
+
+      if (result.success) {
+        setCurrentInterview(updatedInterview);
+        setCurrentPage('progress');
+        
+        // Reload progress data to reflect the new interview
+        await loadProgressData();
+      } else {
+        console.error('Error saving interview:', result.message);
+        // Still navigate to progress page even if save failed
+        setCurrentInterview(updatedInterview);
+        setCurrentPage('progress');
+      }
     }
-  }, [currentInterview]);
+  }, [currentInterview, user]);
+
+  const loadProgressData = useCallback(async () => {
+    if (user) {
+      try {
+        // In a real implementation, you would fetch progress data from the server
+        // For now, we'll create mock data based on interview history
+        const result = await interviewService.getUserInterviewHistory(user.id);
+        
+        if (result.success) {
+          // Calculate progress based on interview history
+          const totalInterviews = result.interviews.length;
+          const totalDuration = result.interviews.reduce((sum: number, interview: any) => {
+            if (interview.startedAt && interview.endedAt) {
+              const duration = (new Date(interview.endedAt).getTime() - new Date(interview.startedAt).getTime()) / (1000 * 60); // in minutes
+              return sum + duration;
+            }
+            return sum;
+          }, 0);
+
+          // Calculate average scores
+          const avgScores = result.interviews.reduce((acc: { overall: number, confidence: number, communication: number, technical: number }, interview: any) => {
+            if (interview.feedback) {
+              acc.overall += interview.feedback.overallScore || 0;
+              acc.confidence += interview.feedback.confidenceScore || 0;
+              acc.communication += interview.feedback.communicationScore || 0;
+              acc.technical += interview.feedback.technicalScore || 0;
+            }
+            return acc;
+          }, { overall: 0, confidence: 0, communication: 0, technical: 0 });
+          
+          const count = result.interviews.length || 1;
+          const avgOverall = Math.round(avgScores.overall / count);
+          const avgConfidence = Math.round(avgScores.confidence / count);
+          const avgCommunication = Math.round(avgScores.communication / count);
+          const avgTechnical = Math.round(avgScores.technical / count);
+          
+          const mockProgressData: ProgressData = {
+            totalInterviews,
+            totalDuration: Math.round(totalDuration),
+            currentStreak: user.streak,
+            longestStreak: user.streak,
+            weaknessRadar: {
+              clarity: avgCommunication,
+              structure: avgCommunication,
+              technicalDepth: avgTechnical,
+              confidence: avgConfidence,
+              relevance: avgOverall
+            },
+            recentSessions: result.interviews.slice(0, 5), // Last 5 interviews
+            improvementTrend: result.interviews.map((interview: any) => ({
+              date: new Date(interview.createdAt || interview.startedAt).toISOString().split('T')[0],
+              score: interview.feedback?.overallScore || 70
+            }))
+          };
+          
+          setProgressData(mockProgressData);
+        }
+      } catch (error) {
+        console.error('Error loading progress data:', error);
+        // Set a default progress data
+        setProgressData({
+          totalInterviews: 0,
+          totalDuration: 0,
+          currentStreak: user.streak,
+          longestStreak: user.streak,
+          weaknessRadar: {
+            clarity: 70,
+            structure: 70,
+            technicalDepth: 70,
+            confidence: 70,
+            relevance: 70
+          },
+          recentSessions: [],
+          improvementTrend: []
+        });
+      }
+    }
+  }, [user]);
 
   const setResume = useCallback((resume: Resume) => {
     setCurrentResume(resume);
@@ -206,6 +301,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     startInterview,
     endInterview,
     progressData,
+    loadProgressData,
     currentResume,
     setResume,
     showDomainSelect,
