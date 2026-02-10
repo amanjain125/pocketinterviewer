@@ -1,26 +1,29 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAppState } from '@/hooks/useAppState';
+import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { Button } from '@/components/ui/button';
-import { 
-  ArrowLeft, 
-  Crown, 
-  Upload, 
+import {
+  ArrowLeft,
+  Crown,
+  Upload,
   FileText,
   CheckCircle2,
   Clock,
   Mic,
   Play,
   Pause,
-  ChevronRight
+  ChevronRight,
+  MicOff,
+  Volume2
 } from 'lucide-react';
 
 const rounds = [
-  { id: 'introduction', name: 'Introduction', duration: '3-5 min', icon: '👋' },
-  { id: 'project', name: 'Project Round', duration: '5-7 min', icon: '💼' },
-  { id: 'technical', name: 'Technical Round', duration: '7-10 min', icon: '💻' },
-  { id: 'behavioral', name: 'Behavioral Round', duration: '5-7 min', icon: '🗣️' },
-  { id: 'rapid_fire', name: 'Rapid Fire', duration: '3-5 min', icon: '⚡' },
-  { id: 'closing', name: 'Closing Round', duration: '2-3 min', icon: '🎯' },
+  { id: 'introduction', name: 'Introduction', duration: '5 min', durationSeconds: 300, icon: '👋' },
+  { id: 'project', name: 'Project Round', duration: '8 min', durationSeconds: 480, icon: '💼' },
+  { id: 'technical', name: 'Technical Round', duration: '8 min', durationSeconds: 480, icon: '💻' },
+  { id: 'behavioral', name: 'Behavioral Round', duration: '5 min', durationSeconds: 300, icon: '🗣️' },
+  { id: 'rapid_fire', name: 'Rapid Fire', duration: '3 min', durationSeconds: 180, icon: '⚡' },
+  { id: 'closing', name: 'Closing Round', duration: '1 min', durationSeconds: 60, icon: '🎯' },
 ];
 
 export function FullInterviewPage() {
@@ -29,7 +32,24 @@ export function FullInterviewPage() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [currentRound, setCurrentRound] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [questionCount, setQuestionCount] = useState(0);
+  const [questionHistory, setQuestionHistory] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<Array<{ question: string; answer: string; round: string }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Speech recognition
+  const {
+    transcript,
+    finalTranscript,
+    isListening,
+    isSupported,
+    startListening,
+    stopListening,
+    resetTranscript
+  } = useSpeechRecognition();
 
   const canAccessFull = user?.plan === 'full';
 
@@ -54,50 +74,289 @@ export function FullInterviewPage() {
     );
   }
 
+  // Generate question based on resume and round
+  const generateQuestion = async (roundIndex: number, previousAnswer: string = '', isFirstQuestion: boolean = false) => {
+    setIsGenerating(true);
+    const round = rounds[roundIndex];
+    let question = '';
+
+    // Hardcoded logic for Introduction Round start
+    if (round.id === 'introduction' && isFirstQuestion) {
+      question = "Tell me about yourself and your background.";
+      setCurrentQuestion(question);
+      setQuestionHistory(prev => [...prev, question]);
+
+      const utterance = new SpeechSynthesisUtterance(question);
+      window.speechSynthesis.speak(utterance);
+      setIsGenerating(false);
+      return;
+    }
+
+    try {
+      const prompt = `
+        Generate a professional interview question for the "${round.name}" round.
+        
+        CANDIDATE CONTEXT:
+        Skills: ${currentResume?.parsedContent?.skills.join(', ') || 'General'}
+        Projects: ${currentResume?.parsedContent?.projects.map(p => p.name).join(', ') || 'None'}
+        Experience: ${currentResume?.parsedContent?.experience.map(e => e.role).join(', ') || 'None'}
+        
+        PREVIOUS CONTEXT:
+        Last Question: ${currentQuestion}
+        Candidate Answer: ${previousAnswer}
+        Question History (DO NOT REPEAT): ${questionHistory.join(' | ')}
+        
+        REQUIREMENTS:
+        - Generate ONE specific, challenging question relevant to their background
+        
+        STRICT ROUND GUIDELINES:
+        - If "Introduction": Ask ONLY about their background, education, or interest in the role. NO technical questions.
+        - If "Project Round": Ask a question SPECIFICALLY about a project listed in CANDIDATE CONTEXT (e.g., "${currentResume?.parsedContent?.projects[0]?.name || 'a recent project'}"). Ask about challenges or implementation.
+        - If "Technical Round": Ask a deep technical question about a skill listed in CANDIDATE CONTEXT (e.g., "${currentResume?.parsedContent?.skills[0] || 'your core stack'}"). Do NOT ask generic questions.
+        - If "Behavioral Round": Ask ONLY STAR method scenario questions (conflict, challenge, etc.).
+        - If "Rapid Fire": Ask short, quick technical questions (max 1 sentence).
+        - If "Closing Round": Ask if they have questions or provide a closing remark.
+
+        - Return ONLY the question text, no intro/outro.
+      `;
+
+      const response = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'llama3.2:3b',
+          prompt: prompt,
+          stream: false
+        })
+      });
+
+      const data = await response.json();
+      const questionMatch = data.response.match(/[^.!?]+[.!?]/);
+      question = questionMatch ? questionMatch[0] : `Tell me about your experience with ${currentResume?.parsedContent?.skills[0] || 'software development'}.`;
+
+      setCurrentQuestion(question);
+      setQuestionHistory(prev => [...prev, question]);
+
+      // Auto-speak question
+      const utterance = new SpeechSynthesisUtterance(question);
+      window.speechSynthesis.speak(utterance);
+
+    } catch (error) {
+      console.error('Error generating question:', error);
+      setCurrentQuestion("Tell me about your background and experience.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsUploading(true);
-    
-    // Simulate upload and analysis
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setUploadedFile(file);
-    setResume({
-      id: '1',
-      userId: user?.id || '',
-      fileUrl: URL.createObjectURL(file),
-      fileName: file.name,
-      uploadedAt: new Date(),
-      parsedContent: {
-        skills: ['React', 'TypeScript', 'Node.js', 'Python', 'Machine Learning'],
-        projects: [
-          { name: 'E-commerce Platform', description: 'Full-stack web application', technologies: ['React', 'Node.js', 'MongoDB'] },
-          { name: 'AI Chatbot', description: 'Conversational AI assistant', technologies: ['Python', 'TensorFlow', 'NLP'] },
-        ],
-        experience: [
-          { company: 'Tech Corp', role: 'Software Engineer', duration: '2022-Present', description: 'Full-stack development' },
-        ],
-        education: [
-          { institution: 'University of Technology', degree: 'Bachelor', field: 'Computer Science', year: '2022' },
-        ],
-      },
-    });
-    
-    setIsUploading(false);
-    setStep('review');
+
+    try {
+      let extractedText = '';
+
+      // Extract text based on file type
+      if (file.type === 'application/pdf') {
+        const { extractTextFromPDF } = await import('@/utils/pdfUtils');
+        extractedText = await extractTextFromPDF(file);
+      } else {
+        // Text based file
+        extractedText = await file.text();
+      }
+
+      console.log('Extracted text length:', extractedText.length);
+      console.log('Preview:', extractedText.substring(0, 100));
+
+      if (!extractedText || extractedText.length < 50) {
+        alert('Could not extract text from this file. Please try converting to a simple text PDF or .txt file.');
+        throw new Error('Insufficient text extracted');
+      }
+
+      // Analyze with Ollama
+      const analysisPrompt = `
+        Analyze this resume text and extract the following information in JSON format:
+        - skills (array of strings)
+        - projects (array of objects with name, description, technologies)
+        - experience (array of objects with company, role, duration, description)
+        
+        RESUME TEXT:
+        ${extractedText.substring(0, 3000)} // Limit length for model
+        
+        Return ONLY valid JSON matching this structure:
+        {
+          "skills": ["skill1", "skill2"],
+          "projects": [{"name": "...", "description": "...", "technologies": ["..."]}],
+          "experience": [{"company": "...", "role": "...", "duration": "...", "description": "..."}]
+        }
+      `;
+
+      const response = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'llama3.2:3b',
+          prompt: analysisPrompt,
+          stream: false,
+          options: { temperature: 0.2 }
+        })
+      });
+
+      const data = await response.json();
+      const jsonMatch = data.response.match(/\{[\s\S]*\}/);
+
+      let parsedContent = {
+        skills: [],
+        projects: [],
+        experience: [],
+        education: []
+      };
+
+      if (jsonMatch) {
+        parsedContent = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error("Failed to parse AI response");
+      }
+
+      setUploadedFile(file);
+      setResume({
+        id: Date.now().toString(),
+        userId: user?.id || '',
+        fileUrl: URL.createObjectURL(file), // Create temporary URL
+        fileName: file.name,
+        uploadedAt: new Date(),
+        parsedContent: parsedContent
+      });
+
+      setStep('review');
+    } catch (error) {
+      console.error('Error analyzing resume:', error);
+      // Fallback for demo/error
+      setResume({
+        id: '1',
+        userId: user?.id || '',
+        fileUrl: '',
+        fileName: file.name,
+        uploadedAt: new Date(),
+        parsedContent: {
+          skills: ['Manual Entry Required'],
+          projects: [],
+          experience: [],
+          education: []
+        }
+      });
+      setStep('review');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Timer Effect
+  useEffect(() => {
+    let interval: any;
+
+    if (step === 'interview' && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => clearInterval(interval);
+  }, [step, timeLeft]);
+
+  // Format time as MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const startInterview = () => {
+    stopListening();
     setStep('interview');
+    setCurrentRound(0);
+    setTimeLeft(rounds[0].durationSeconds);
+    setQuestionCount(1);
+    setQuestionHistory([]);
+    setAnswers([]);
+    generateQuestion(0, '', true);
+  };
+
+  const saveInterview = async () => {
+    if (!user) return;
+
+    try {
+      const response = await fetch('http://localhost:5000/api/interviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          config: { type: 'full', rounds: rounds },
+          questions: answers.map((a, i) => ({ id: i.toString(), text: a.question, type: 'text' })),
+          answers: answers.map((a, i) => ({ questionId: i.toString(), text: a.answer, timestamp: new Date() })),
+          feedback: { overallScore: 0, summary: 'Pending Analysis' }, // Placeholder for now
+          type: 'full'
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to save interview');
+      console.log('Interview saved successfully');
+    } catch (error) {
+      console.error('Error saving interview:', error);
+    }
   };
 
   const nextRound = () => {
+    stopListening();
     if (currentRound < rounds.length - 1) {
-      setCurrentRound(prev => prev + 1);
+      const next = currentRound + 1;
+      setCurrentRound(next);
+      setTimeLeft(rounds[next].durationSeconds);
+      setQuestionCount(1);
+      setQuestionHistory([]);
+      generateQuestion(next, finalTranscript);
+      resetTranscript();
     } else {
+      saveInterview();
       setStep('complete');
+    }
+  };
+
+  const toggleListening = () => {
+    if (isListening) {
+      stopListening();
+      handleAnswerComplete();
+    } else {
+      resetTranscript();
+      startListening();
+    }
+  };
+
+  const handleAnswerComplete = async () => {
+    // Wait for final transcript processing
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Save answer
+    if (finalTranscript) {
+      setAnswers(prev => [...prev, {
+        question: currentQuestion,
+        answer: finalTranscript,
+        round: rounds[currentRound].name
+      }]);
+    }
+
+    // Auto-generate next question if under limit (3)
+    if (questionCount < 3) {
+      setQuestionCount(prev => prev + 1);
+      generateQuestion(currentRound, finalTranscript);
     }
   };
 
@@ -125,7 +384,7 @@ export function FullInterviewPage() {
             <div className="w-20 h-20 bg-[#FF4EC2]/20 rounded-full flex items-center justify-center mx-auto mb-6">
               <Upload className="w-10 h-10 text-[#FF4EC2]" />
             </div>
-            
+
             <h2 className="text-2xl text-white font-semibold mb-4">
               Upload Your Resume
             </h2>
@@ -284,7 +543,7 @@ export function FullInterviewPage() {
   // Interview Step
   if (step === 'interview') {
     const round = rounds[currentRound];
-    
+
     return (
       <div className="min-h-screen bg-[#2B0B57] pt-20 pb-8 px-4">
         <div className="max-w-4xl mx-auto">
@@ -298,15 +557,22 @@ export function FullInterviewPage() {
                   <p className="text-white/50 text-sm">Round {currentRound + 1} of {rounds.length}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-white/60">
-                <Clock className="w-4 h-4" />
-                <span>{round.duration}</span>
+              <div className="flex items-center gap-4 text-white/60">
+                <div className="flex items-center gap-2 bg-white/5 px-3 py-1 rounded-full">
+                  <span className="text-sm font-medium text-white">
+                    Question {questionCount} <span className="text-white/40">/ 3+</span>
+                  </span>
+                </div>
+                <div className={`flex items-center gap-2 ${timeLeft < 60 ? 'text-[#FF4EC2]' : ''}`}>
+                  <Clock className="w-4 h-4" />
+                  <span className="font-mono font-medium">{formatTime(timeLeft)}</span>
+                </div>
               </div>
             </div>
-            
+
             {/* Progress Bar */}
             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-[#FF4EC2] to-[#ff8ad8] rounded-full transition-all duration-500"
                 style={{ width: `${((currentRound + 1) / rounds.length) * 100}%` }}
               />
@@ -320,45 +586,92 @@ export function FullInterviewPage() {
                 <Mic className="w-5 h-5 text-[#FF4EC2]" />
               </div>
               <span className="text-white/60 text-sm">AI Interviewer</span>
+              <button
+                onClick={() => {
+                  const utterance = new SpeechSynthesisUtterance(currentQuestion);
+                  window.speechSynthesis.speak(utterance);
+                }}
+                className="ml-auto text-[#FF4EC2] hover:text-[#ff6fd1] transition-colors"
+              >
+                <Volume2 className="w-5 h-5" />
+              </button>
             </div>
             <p className="text-white text-lg leading-relaxed">
-              {currentRound === 0 && "Tell me about yourself and walk me through your background."}
-              {currentRound === 1 && "Can you describe your E-commerce Platform project in detail? What was your specific role and what technologies did you use?"}
-              {currentRound === 2 && "Explain how you would design a scalable notification system. What considerations would you keep in mind?"}
-              {currentRound === 3 && "Tell me about a time when you had to learn a new technology quickly. How did you approach it?"}
-              {currentRound === 4 && "What's your greatest strength? What's your biggest weakness?"}
-              {currentRound === 5 && "Do you have any questions for us?"}
+              {isGenerating ? "Generating relevant question..." : currentQuestion}
             </p>
           </div>
 
           {/* Answer Controls */}
           <div className="card-violet p-6">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-white/60 text-sm">Your Answer</span>
+              {isListening && (
+                <div className="flex items-center gap-2 text-[#FF4EC2]">
+                  <div className="voice-wave">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="voice-wave-bar" />
+                    ))}
+                  </div>
+                  <span className="text-sm">Listening...</span>
+                </div>
+              )}
+            </div>
+
+            <div className="min-h-[100px] bg-white/5 rounded-xl p-4 mb-4">
+              {transcript ? (
+                <p className="text-white">{transcript}</p>
+              ) : (
+                <p className="text-white/30 italic">
+                  {isListening ? 'Start speaking...' : 'Click the microphone to start answering'}
+                </p>
+              )}
+            </div>
+
             <div className="flex items-center justify-center gap-4">
-              <Button className="btn-primary px-8">
-                <Mic className="w-5 h-5 mr-2" />
-                Answer
-              </Button>
-              <Button variant="outline" className="btn-secondary">
-                <Pause className="w-5 h-5 mr-2" />
-                Pause
+              <Button
+                className={isListening ? 'bg-red-500 hover:bg-red-600' : 'btn-primary px-8'}
+                onClick={toggleListening}
+              >
+                {isListening ? (
+                  <>
+                    <MicOff className="w-5 h-5 mr-2" />
+                    Stop
+                  </>
+                ) : (
+                  <>
+                    <Mic className="w-5 h-5 mr-2" />
+                    Answer
+                  </>
+                )}
               </Button>
             </div>
           </div>
 
           {/* Navigation */}
-          <div className="flex justify-between mt-6">
-            <Button 
-              variant="outline" 
-              onClick={() => setCurrentRound(Math.max(0, currentRound - 1))}
-              disabled={currentRound === 0}
-              className="btn-secondary"
-            >
-              Previous Round
-            </Button>
-            <Button onClick={nextRound} className="btn-primary">
-              {currentRound < rounds.length - 1 ? 'Next Round' : 'Finish Interview'}
-              <ChevronRight className="w-5 h-5 ml-2" />
-            </Button>
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentRound(Math.max(0, currentRound - 1))}
+                disabled={currentRound === 0}
+                className="btn-secondary"
+              >
+                Previous Round
+              </Button>
+              <Button
+                onClick={nextRound}
+                className={`btn-primary ${questionCount < 3 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={questionCount < 3}
+              >
+                {currentRound < rounds.length - 1 ? 'Next Round' : 'Finish Interview'}
+                <ChevronRight className="w-5 h-5 ml-2" />
+              </Button>
+            </div>
+            {questionCount < 3 && (
+              <p className="text-white/30 text-xs text-center">
+                Please answer at least {3 - questionCount} more question{questionCount !== 2 ? 's' : ''} to proceed
+              </p>
+            )}
           </div>
         </div>
       </div>

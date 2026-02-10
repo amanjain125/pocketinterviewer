@@ -9,6 +9,11 @@ const interviewSchema = new mongoose.Schema({
     type: Object,
     required: true
   },
+  type: {
+    type: String,
+    enum: ['full', 'stress', 'distraction'],
+    default: 'full'
+  },
   questions: [{
     id: String,
     text: String,

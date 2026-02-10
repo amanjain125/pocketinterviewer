@@ -64,7 +64,7 @@ const generateQuestionsWithOllama = async (interviewType: string, difficulty: st
     });
 
     const data = await response.json();
-    
+
     // Extract questions from response - this may vary depending on Ollama response format
     // Attempt to parse as JSON array of questions
     try {
@@ -77,12 +77,12 @@ const generateQuestionsWithOllama = async (interviewType: string, difficulty: st
       const questionLines = data.response.split('\n').filter((line: string) =>
         line.trim() &&
         (line.includes('?') || line.startsWith('1.') || line.startsWith('2.') ||
-         line.startsWith('3.') || line.startsWith('4.') || line.startsWith('5.'))
+          line.startsWith('3.') || line.startsWith('4.') || line.startsWith('5.'))
       );
 
       return questionLines.map((q: string) => q.replace(/^\d+\.\s*/, '').replace(/^\d+\)\s*/, '').trim()).filter((q: string) => q);
     }
-    
+
     return [];
   } catch (error) {
     console.error('Error generating questions with Ollama:', error);
@@ -123,7 +123,8 @@ export function InterviewPage() {
   const [lastFeedback, setLastFeedback] = useState<string>(''); // Post-answer feedback
   const [questions, setQuestions] = useState<string[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<string>('');
-  
+  const [answers, setAnswers] = useState<Array<{ question: string; answer: string; timestamp: string }>>([]);
+
   const {
     isListening,
     transcript,
@@ -143,7 +144,7 @@ export function InterviewPage() {
           interviewConfig.difficulty
         );
         setQuestions(generatedQuestions);
-        
+
         if (generatedQuestions.length > 0) {
           setCurrentQuestion(generatedQuestions[0]);
         }
@@ -177,7 +178,7 @@ export function InterviewPage() {
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         let newTime = prev - 1;
-        
+
         // In stress mode, reduce time faster to increase pressure
         if (interviewConfig?.mode === 'stress' && newTime > 0) {
           // Reduce time by an additional second every 20 seconds to increase pressure
@@ -186,7 +187,7 @@ export function InterviewPage() {
             setLastFeedback(current => current + " ⚡ Time pressure increasing! Time reduced!");
           }
         }
-        
+
         return newTime;
       });
     }, 1000);
@@ -305,7 +306,7 @@ export function InterviewPage() {
 
       // Analyze transcript more frequently in special modes
       const interval = setInterval(
-        analyzeTranscript, 
+        analyzeTranscript,
         (interviewConfig?.mode === 'stress' || interviewConfig?.mode === 'distraction') ? 800 : 1000 // Every 800ms in special modes, 1000ms in normal mode
       );
 
@@ -319,7 +320,7 @@ export function InterviewPage() {
     let audioContext: AudioContext | null = null;
     let noiseInterval: ReturnType<typeof setInterval> | null = null;
     let noiseTypeInterval: ReturnType<typeof setInterval> | null = null;
-    
+
     if (interviewConfig?.mode === 'distraction' && isListening) {
       // Array of different noise types
       const noiseTypes = [
@@ -330,16 +331,16 @@ export function InterviewPage() {
         'traffic',  // Traffic noise
         'office'    // Office chatter
       ];
-      
+
       let currentNoiseType = 'white'; // Start with white noise
-      
+
       // Function to create different types of noise
       const createNoiseBuffer = (noiseType: string) => {
         try {
           if (!audioContext) {
             audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
           }
-          
+
           const bufferSize = audioContext.sampleRate * 10; // 10 seconds of noise
           const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
           const data = buffer.getChannelData(0);
@@ -351,7 +352,7 @@ export function InterviewPage() {
                 data[i] = Math.random() * 2 - 1; // Random value between -1 and 1
               }
               break;
-              
+
             case 'pink':
               // Pink noise: more natural, balanced sound
               let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
@@ -367,7 +368,7 @@ export function InterviewPage() {
                 data[i] *= 0.11; // Scale to prevent clipping
               }
               break;
-              
+
             case 'brown':
               // Brown noise: deeper, rumbling sound
               let lastValue = 0;
@@ -377,7 +378,7 @@ export function InterviewPage() {
                 data[i] = lastValue;
               }
               break;
-              
+
             case 'coffee':
               // Coffee shop ambiance: mix of conversations and background sounds
               for (let i = 0; i < bufferSize; i++) {
@@ -391,7 +392,7 @@ export function InterviewPage() {
                 data[i] = coffeeAmbiance;
               }
               break;
-              
+
             case 'traffic':
               // Traffic noise: road noise simulation
               for (let i = 0; i < bufferSize; i++) {
@@ -405,7 +406,7 @@ export function InterviewPage() {
                 data[i] = traffic;
               }
               break;
-              
+
             case 'office':
               // Office chatter: low-level conversations
               for (let i = 0; i < bufferSize; i++) {
@@ -419,7 +420,7 @@ export function InterviewPage() {
                 data[i] = officeChatter;
               }
               break;
-              
+
             default:
               // Default to white noise
               for (let i = 0; i < bufferSize; i++) {
@@ -442,30 +443,30 @@ export function InterviewPage() {
           return fallbackBuffer;
         }
       };
-      
+
       // Function to start playing a specific noise type
       const startNoise = (noiseType: string) => {
         if (noiseSource) {
           noiseSource.stop();
           noiseSource.disconnect();
         }
-        
+
         const buffer = createNoiseBuffer(noiseType);
         noiseSource = audioContext!.createBufferSource();
         noiseSource.buffer = buffer;
         noiseSource.loop = true;
-        
+
         // Connect to output with low volume
         noiseSource.connect(audioContext!.destination);
         noiseSource.start();
       };
-      
+
       // Start with initial noise
       if (!audioContext) {
         audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       }
       startNoise(currentNoiseType);
-      
+
       // Change noise type periodically
       noiseTypeInterval = setInterval(() => {
         const randomNoiseType = noiseTypes[Math.floor(Math.random() * noiseTypes.length)];
@@ -475,7 +476,7 @@ export function InterviewPage() {
           console.log(`Switched to ${currentNoiseType} noise`);
         }
       }, 30000); // Change noise type every 30 seconds
-      
+
       // Simulate periodic louder distractions
       noiseInterval = setInterval(() => {
         // Higher chance of distraction (60% every 8 seconds)
@@ -488,13 +489,13 @@ export function InterviewPage() {
             "🚨 NOISE INTERRUPTION! Maintain your composure.",
             "🚨 ENVIRONMENTAL DISTRACTION! Focus on the question."
           ];
-          
+
           const randomMessage = distractionMessages[Math.floor(Math.random() * distractionMessages.length)];
           setLastFeedback(randomMessage);
-          
+
           // Add visual distraction effect
           document.body.classList.add('distraction-active');
-          
+
           // Play a louder distraction sound based on current noise type
           let distractionSound;
           switch (currentNoiseType) {
@@ -510,11 +511,11 @@ export function InterviewPage() {
             default:
               distractionSound = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAAAAAAA='; // General alert
           }
-          
+
           const distractionAudio = new Audio(distractionSound);
           distractionAudio.volume = 0.4; // Louder than background noise
           distractionAudio.play().catch(e => console.log("Distraction audio play failed:", e));
-          
+
           setTimeout(() => {
             document.body.classList.remove('distraction-active');
           }, 3000); // Remove distraction effect after 3 seconds
@@ -587,21 +588,31 @@ export function InterviewPage() {
       }
     }
 
+
+    // Save current answer
+    if (transcript) {
+      setAnswers(prev => [...prev, {
+        question: currentQuestion,
+        answer: transcript,
+        timestamp: new Date().toISOString()
+      }]);
+    }
+
     if (currentQuestionIndex < questions.length - 1) {
       // Move to next question after a brief pause to show feedback
       setTimeout(() => {
         resetTranscript();
         setCurrentQuestionIndex(prev => prev + 1);
-        
+
         // Randomly select next skill to focus on
         const skills: SkillType[] = ['clarity', 'structure', 'confidence', 'technicalDepth', 'relevance'];
         const randomSkill = skills[Math.floor(Math.random() * skills.length)];
         setActiveSkill(randomSkill);
-        
+
         // Reset skill value for new question
         setSkillValue(50);
         setSkillColor('#818cf8');
-        
+
         // In stress mode, reduce time for next question
         if (interviewConfig?.mode === 'stress') {
           setTimeLeft(prev => Math.max(30, prev - 30)); // Reduce time by 30 seconds but keep minimum 30
@@ -610,6 +621,36 @@ export function InterviewPage() {
     } else {
       // End interview if no more questions
       handleEndInterview();
+    }
+  };
+
+  const saveInterview = async (finalFeedback: any) => {
+    if (!user) return;
+
+    try {
+      await fetch('http://localhost:5000/api/interviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          config: {
+            type: interviewConfig?.mode || interviewConfig?.type || 'practice',
+            difficulty: interviewConfig?.difficulty
+          },
+          questions: questions.map((q, i) => ({ id: i.toString(), text: q, type: 'text' })),
+          answers: answers.map((a, i) => ({
+            questionId: i.toString(),
+            text: a.answer,
+            timestamp: a.timestamp
+          })),
+          feedback: finalFeedback,
+          type: interviewConfig?.mode === 'stress' ? 'stress' :
+            interviewConfig?.mode === 'distraction' ? 'distraction' : 'practice'
+        })
+      });
+      console.log('Interview saved successfully');
+    } catch (error) {
+      console.error('Error saving interview:', error);
     }
   };
 
@@ -667,7 +708,7 @@ export function InterviewPage() {
       });
 
       const data = await response.json();
-      
+
       // Extract feedback from response
       try {
         // Try to parse the response as JSON
@@ -675,6 +716,7 @@ export function InterviewPage() {
         if (jsonString) {
           const feedback = JSON.parse(jsonString);
           setIsProcessing(false);
+          saveInterview(feedback);
           endInterview(feedback);
           return;
         }
@@ -701,11 +743,13 @@ export function InterviewPage() {
         }
       };
 
+      saveInterview(basicFeedback);
+
       setIsProcessing(false);
       endInterview(basicFeedback);
     } catch (error) {
       console.error('Error getting feedback from Ollama:', error);
-      
+
       // Fallback to basic feedback if Ollama fails
       const fallbackFeedback = {
         overallScore: 65,
@@ -725,6 +769,7 @@ export function InterviewPage() {
         }
       };
 
+      saveInterview(fallbackFeedback);
       setIsProcessing(false);
       endInterview(fallbackFeedback);
     }
@@ -790,28 +835,26 @@ export function InterviewPage() {
             <div className="bg-gray-800/30 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 flex flex-col items-center">
               {/* Mode Indicator */}
               {interviewConfig?.mode && (
-                <div className={`w-full mb-4 px-4 py-2 rounded-full text-center text-sm font-medium ${
-                  interviewConfig.mode === 'stress' 
-                    ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
-                    : interviewConfig.mode === 'distraction'
+                <div className={`w-full mb-4 px-4 py-2 rounded-full text-center text-sm font-medium ${interviewConfig.mode === 'stress'
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                  : interviewConfig.mode === 'distraction'
                     ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
                     : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                }`}>
-                  {interviewConfig.mode === 'stress' ? '⚡ STRESS MODE' : 
-                   interviewConfig.mode === 'distraction' ? '🔊 DISTRACTION MODE' : '🎯 NORMAL MODE'}
+                  }`}>
+                  {interviewConfig.mode === 'stress' ? '⚡ STRESS MODE' :
+                    interviewConfig.mode === 'distraction' ? '🔊 DISTRACTION MODE' : '🎯 NORMAL MODE'}
                 </div>
               )}
-              
+
               {/* AI Avatar */}
               <div className="relative mb-6">
                 <div className="ai-avatar-glow">
-                  <div className={`w-32 h-32 rounded-full flex items-center justify-center shadow-lg ${
-                    interviewConfig?.mode === 'stress' 
-                      ? 'bg-gradient-to-br from-red-500 to-orange-500 shadow-red-500/20' 
-                      : interviewConfig?.mode === 'distraction'
+                  <div className={`w-32 h-32 rounded-full flex items-center justify-center shadow-lg ${interviewConfig?.mode === 'stress'
+                    ? 'bg-gradient-to-br from-red-500 to-orange-500 shadow-red-500/20'
+                    : interviewConfig?.mode === 'distraction'
                       ? 'bg-gradient-to-br from-yellow-500 to-amber-500 shadow-yellow-500/20'
                       : 'bg-gradient-to-br from-indigo-500 to-purple-600 shadow-indigo-500/20'
-                  }`}>
+                    }`}>
                     <span className="text-6xl">🤖</span>
                   </div>
                 </div>
@@ -820,13 +863,12 @@ export function InterviewPage() {
                   {[...Array(5)].map((_, i) => (
                     <div
                       key={i}
-                      className={`w-1 rounded-full animate-pulse ${
-                        interviewConfig?.mode === 'stress' 
-                          ? 'bg-red-400' 
-                          : interviewConfig?.mode === 'distraction'
+                      className={`w-1 rounded-full animate-pulse ${interviewConfig?.mode === 'stress'
+                        ? 'bg-red-400'
+                        : interviewConfig?.mode === 'distraction'
                           ? 'bg-yellow-400'
                           : 'bg-indigo-400'
-                      }`}
+                        }`}
                       style={{
                         height: `${12 + Math.random() * 16}px`,
                         animationDelay: `${i * 0.1}s`
@@ -838,49 +880,49 @@ export function InterviewPage() {
 
               <h3 className="text-white font-semibold mb-1">AI Interviewer</h3>
               <p className="text-white/50 text-sm text-center">
-                {interviewConfig?.mode === 'stress' 
-                  ? 'Testing your performance under pressure' 
+                {interviewConfig?.mode === 'stress'
+                  ? 'Testing your performance under pressure'
                   : interviewConfig?.mode === 'distraction'
-                  ? 'Assessing your focus amid distractions'
-                  : 'Listening and adapting to your responses'}
+                    ? 'Assessing your focus amid distractions'
+                    : 'Listening and adapting to your responses'}
               </p>
             </div>
 
             {/* Live Skill Meter */}
             <div className="bg-gray-800/30 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 mt-6">
               <h3 className="text-white font-semibold mb-4 text-center">{skillLabels[activeSkill]}</h3>
-              
+
               {/* Gauge visualization */}
               <div className="relative h-48 flex items-center justify-center">
                 {/* Circular gauge background */}
                 <div className="absolute w-40 h-40 rounded-full border-4 border-gray-600"></div>
-                
+
                 {/* Gauge needle */}
-                <div 
+                <div
                   className="absolute w-1 h-20 origin-bottom bg-white rounded-full transition-all duration-300"
                   style={{
                     transform: `rotate(${(skillValue / 100) * 180 - 90}deg)`,
                     backgroundColor: skillColor
                   }}
                 ></div>
-                
+
                 {/* Center indicator */}
-                <div 
+                <div
                   className="absolute w-6 h-6 rounded-full z-10"
                   style={{ backgroundColor: skillColor }}
                 ></div>
-                
+
                 {/* Value indicator */}
                 <div className="absolute bottom-4 text-white font-bold text-xl">
                   {Math.round(skillValue)}%
                 </div>
               </div>
-              
+
               {/* Skill hint */}
               <p className="text-gray-300 text-sm text-center mt-4">
                 {skillHints[activeSkill]}
               </p>
-              
+
               {/* Post-answer feedback */}
               {lastFeedback && (
                 <div className="mt-4 p-3 bg-gray-700/50 rounded-lg border border-gray-600">
@@ -965,7 +1007,7 @@ export function InterviewPage() {
                       </>
                     )}
                   </Button>
-                  
+
                   {!isSupported && (
                     <div className="flex items-center gap-2 text-red-400 text-sm">
                       <VolumeX className="w-4 h-4" />
