@@ -3,13 +3,13 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useAppState } from '@/hooks/useAppState';
 import { Button } from '@/components/ui/button';
-import { 
-  Mic, 
-  MessageSquare, 
-  TrendingUp, 
-  Zap, 
-  Users, 
-  Target, 
+import {
+  Mic,
+  MessageSquare,
+  TrendingUp,
+  Zap,
+  Users,
+  Target,
   Briefcase,
   ChevronRight,
   Star,
@@ -183,6 +183,23 @@ export function LandingPage() {
     return () => ctx.revert();
   }, []);
 
+  // Check for pending scroll target on mount
+  useEffect(() => {
+    const scrollTarget = sessionStorage.getItem('landingScrollTarget');
+    if (scrollTarget) {
+      // Clear it immediately
+      sessionStorage.removeItem('landingScrollTarget');
+
+      // Small delay to ensure rendering
+      setTimeout(() => {
+        const element = document.getElementById(scrollTarget);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, []);
+
   const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>) => {
     ref.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -191,68 +208,125 @@ export function LandingPage() {
     <div className="min-h-screen bg-[#2B0B57]">
       {/* Hero Section */}
       <section ref={heroRef} className="min-h-screen flex items-center justify-center px-4 sm:px-8 pt-20">
-        <div className="max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-8 items-center">
-          {/* Left Card - Headline */}
-          <div className="hero-left-card card-violet p-8 sm:p-12 relative overflow-hidden">
+        <div className="max-w-5xl mx-auto w-full flex flex-col items-center justify-center text-center">
+          {/* Main Card - Headline */}
+          <div className="hero-left-card card-violet p-8 sm:p-16 relative overflow-hidden w-full max-w-4xl">
             <div className="absolute top-0 right-0 w-64 h-64 gradient-blob opacity-50" />
-            
-            <div className="relative z-10">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl text-white font-display font-black leading-[0.95] mb-6">
+            <div className="absolute bottom-0 left-0 w-64 h-64 gradient-blob opacity-50" />
+
+            <div className="relative z-10 flex flex-col items-center">
+              <h1 className="text-4xl sm:text-5xl lg:text-7xl text-white font-display font-black leading-[1.1] mb-8">
                 Practice<br />
                 interviews<br />
                 <span className="text-[#FF4EC2]">anywhere.</span>
               </h1>
-              
-              <p className="text-white/70 text-lg mb-8 max-w-md">
-                AI-generated questions, voice answers, and instant feedback. 
-                Build confidence for your next big opportunity.
+
+              <p className="text-white/70 text-lg sm:text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
+                AI-generated questions, voice answers, and instant feedback.
+                Build confidence for your next big opportunity with the ultimate interview prep tool.
               </p>
-              
-              <div className="flex flex-wrap gap-4">
-                <Button 
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center w-full">
+                <Button
                   onClick={() => navigateTo('signup')}
-                  className="btn-primary"
+                  className="btn-primary text-lg px-8 py-6 h-auto"
                 >
                   Start practicing
-                  <ChevronRight className="w-5 h-5 ml-2" />
+                  <ChevronRight className="w-6 h-6 ml-2" />
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
-                  onClick={() => scrollToSection(howItWorksRef)}
-                  className="btn-secondary"
+                  onClick={() => scrollToSection(pricingRef)}
+                  className="btn-secondary text-lg px-8 py-6 h-auto"
                 >
-                  See how it works
+                  View Pricing
                 </Button>
               </div>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Right Card - Visual */}
-          <div className="hero-right-card card-violet p-8 sm:p-12 flex items-center justify-center relative min-h-[400px]">
-            <div className="absolute inset-0 gradient-blob opacity-30 animate-blob-drift" />
-            
-            <div className="relative z-10 text-center">
-              <div className="w-40 h-40 sm:w-48 sm:h-48 mx-auto rounded-full bg-white flex items-center justify-center animate-float-slow overflow-hidden shadow-lg">
-                <img 
-                  src="/logo.png" 
-                  alt="Pocket Interviewer Logo" 
-                  className="w-32 h-32 sm:w-40 sm:h-40 object-contain"
-                  onError={(e) => {
-                    // Fallback to emoji if image fails to load
-                    e.currentTarget.style.display = 'none';
-                    const parent = e.currentTarget.parentElement;
-                    if (parent) {
-                      const fallbackDiv = document.createElement('div');
-                      fallbackDiv.className = 'text-[150px] sm:text-[180px] leading-none animate-float-slow';
-                      fallbackDiv.textContent = '💼';
-                      parent.appendChild(fallbackDiv);
-                    }
-                  }}
-                />
+      {/* Pricing Section (Moved) */}
+      <section ref={pricingRef} id="pricing" className="py-20 px-4 sm:px-8 bg-[#4B2086]">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl text-white font-display font-black mb-4">
+              Simple, transparent pricing
+            </h2>
+            <p className="text-white/60 text-lg">
+              Start free, upgrade when you&apos;re ready.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {/* Freemium */}
+            <div className="pricing-card card-violet-dark p-8">
+              <div className="text-center mb-8">
+                <h3 className="text-xl text-white font-display font-bold mb-2">Freemium</h3>
+                <div className="text-4xl text-white font-display font-black">Free</div>
               </div>
-              <div className="absolute top-8 right-8 text-5xl animate-rotate-slow">
-                ✨
+              <ul className="space-y-4 mb-8">
+                {['Micro interviews', 'Progress stories', 'Weakness radar', 'Streaks', 'Basic feedback'].map((feature, i) => (
+                  <li key={i} className="flex items-center gap-3 text-white/70">
+                    <CheckCircle2 className="w-5 h-5 text-[#FF4EC2]" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <Button
+                onClick={() => navigateTo('signup')}
+                className="w-full btn-secondary"
+              >
+                Get started
+              </Button>
+            </div>
+
+            {/* Advanced */}
+            <div className="pricing-card card-violet p-8 border-2 border-[#FF4EC2]/60 relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#FF4EC2] text-white text-xs font-bold px-4 py-1 rounded-full">
+                POPULAR
               </div>
+              <div className="text-center mb-8">
+                <h3 className="text-xl text-white font-display font-bold mb-2">Advanced Practice</h3>
+                <div className="text-4xl text-white font-display font-black">$12<span className="text-lg text-white/50">/mo</span></div>
+              </div>
+              <ul className="space-y-4 mb-8">
+                {['Everything in Freemium', 'Stress Mode', 'Distraction Mode', 'Panel Interviewer', 'Detailed analytics'].map((feature, i) => (
+                  <li key={i} className="flex items-center gap-3 text-white/70">
+                    <CheckCircle2 className="w-5 h-5 text-[#FF4EC2]" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <Button
+                onClick={() => navigateTo('signup')}
+                className="w-full btn-primary"
+              >
+                Start trial
+              </Button>
+            </div>
+
+            {/* Full Interview */}
+            <div className="pricing-card card-violet-dark p-8">
+              <div className="text-center mb-8">
+                <h3 className="text-xl text-white font-display font-bold mb-2">Full Interview</h3>
+                <div className="text-4xl text-white font-display font-black">$29<span className="text-lg text-white/50">/mo</span></div>
+              </div>
+              <ul className="space-y-4 mb-8">
+                {['Everything in Advanced', '30-minute full interview', 'Resume-based questioning', 'Multiple rounds', 'Detailed feedback'].map((feature, i) => (
+                  <li key={i} className="flex items-center gap-3 text-white/70">
+                    <CheckCircle2 className="w-5 h-5 text-[#FF4EC2]" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <Button
+                onClick={() => navigateTo('signup')}
+                className="w-full btn-secondary"
+              >
+                Start trial
+              </Button>
             </div>
           </div>
         </div>
@@ -314,7 +388,7 @@ export function LandingPage() {
       </section>
 
       {/* How It Works Section */}
-      <section ref={howItWorksRef} className="py-20 px-4 sm:px-8 bg-[#4B2086]">
+      <section ref={howItWorksRef} id="how-it-works" className="py-20 px-4 sm:px-8 bg-[#4B2086]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl text-white font-display font-black mb-4">
@@ -383,7 +457,7 @@ export function LandingPage() {
                 From first impressions to deep technical rounds.
               </p>
             </div>
-            <Button 
+            <Button
               onClick={() => navigateTo('signup')}
               className="btn-secondary"
             >
@@ -496,23 +570,23 @@ export function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { 
-                emoji: '👩‍💼', 
-                name: 'Aisha', 
+              {
+                emoji: '👩‍💼',
+                name: 'Aisha',
                 role: 'Product Manager',
-                quote: 'I went from rambling to structured answers in two weeks. The feedback is incredibly actionable.' 
+                quote: 'I went from rambling to structured answers in two weeks. The feedback is incredibly actionable.'
               },
-              { 
-                emoji: '👨‍🎓', 
-                name: 'Ben', 
+              {
+                emoji: '👨‍🎓',
+                name: 'Ben',
                 role: 'New Grad',
-                quote: 'The feedback is honest and actionable. Like having a coach in your pocket 24/7.' 
+                quote: 'The feedback is honest and actionable. Like having a coach in your pocket 24/7.'
               },
-              { 
-                emoji: '👩‍💻', 
-                name: 'Carmen', 
+              {
+                emoji: '👩‍💻',
+                name: 'Carmen',
                 role: 'Career Switcher',
-                quote: 'Panel mode made the real thing feel easy. I was prepared for every curveball.' 
+                quote: 'Panel mode made the real thing feel easy. I was prepared for every curveball.'
               },
             ].map((testimonial, i) => (
               <div key={i} className="testimonial-card card-violet p-8">
@@ -528,93 +602,10 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section ref={pricingRef} className="py-20 px-4 sm:px-8 bg-[#4B2086]">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl text-white font-display font-black mb-4">
-              Pricing
-            </h2>
-            <p className="text-white/60 text-lg">
-              Start free, upgrade when you&apos;re ready.
-            </p>
-          </div>
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {/* Freemium */}
-            <div className="pricing-card card-violet-dark p-8">
-              <div className="text-center mb-8">
-                <h3 className="text-xl text-white font-display font-bold mb-2">Freemium</h3>
-                <div className="text-4xl text-white font-display font-black">Free</div>
-              </div>
-              <ul className="space-y-4 mb-8">
-                {['Micro interviews', 'Progress stories', 'Weakness radar', 'Streaks', 'Basic feedback'].map((feature, i) => (
-                  <li key={i} className="flex items-center gap-3 text-white/70">
-                    <CheckCircle2 className="w-5 h-5 text-[#FF4EC2]" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-              <Button 
-                onClick={() => navigateTo('signup')}
-                className="w-full btn-secondary"
-              >
-                Get started
-              </Button>
-            </div>
-
-            {/* Advanced */}
-            <div className="pricing-card card-violet p-8 border-2 border-[#FF4EC2]/60 relative">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#FF4EC2] text-white text-xs font-bold px-4 py-1 rounded-full">
-                POPULAR
-              </div>
-              <div className="text-center mb-8">
-                <h3 className="text-xl text-white font-display font-bold mb-2">Advanced Practice</h3>
-                <div className="text-4xl text-white font-display font-black">$12<span className="text-lg text-white/50">/mo</span></div>
-              </div>
-              <ul className="space-y-4 mb-8">
-                {['Everything in Freemium', 'Stress Mode', 'Distraction Mode', 'Panel Interviewer', 'Detailed analytics'].map((feature, i) => (
-                  <li key={i} className="flex items-center gap-3 text-white/70">
-                    <CheckCircle2 className="w-5 h-5 text-[#FF4EC2]" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-              <Button 
-                onClick={() => navigateTo('signup')}
-                className="w-full btn-primary"
-              >
-                Start trial
-              </Button>
-            </div>
-
-            {/* Full Interview */}
-            <div className="pricing-card card-violet-dark p-8">
-              <div className="text-center mb-8">
-                <h3 className="text-xl text-white font-display font-bold mb-2">Full Interview</h3>
-                <div className="text-4xl text-white font-display font-black">$29<span className="text-lg text-white/50">/mo</span></div>
-              </div>
-              <ul className="space-y-4 mb-8">
-                {['Everything in Advanced', '30-minute full interview', 'Resume-based questioning', 'Multiple rounds', 'Detailed feedback'].map((feature, i) => (
-                  <li key={i} className="flex items-center gap-3 text-white/70">
-                    <CheckCircle2 className="w-5 h-5 text-[#FF4EC2]" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-              <Button 
-                onClick={() => navigateTo('signup')}
-                className="w-full btn-secondary"
-              >
-                Start trial
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* FAQ Section */}
-      <section ref={faqRef} className="py-20 px-4 sm:px-8">
+      <section ref={faqRef} id="faq" className="py-20 px-4 sm:px-8">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-3xl sm:text-4xl text-white font-display font-black mb-12 text-center">
             FAQ
@@ -651,14 +642,14 @@ export function LandingPage() {
                 Start with a free micro interview. Upgrade when you&apos;re ready to go deeper.
               </p>
               <div className="flex flex-wrap gap-4">
-                <Button 
+                <Button
                   onClick={() => navigateTo('signup')}
                   className="btn-primary"
                 >
                   Start practicing
                   <Briefcase className="w-5 h-5 ml-2" />
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
                   onClick={() => scrollToSection(pricingRef)}
                   className="btn-secondary"

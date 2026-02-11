@@ -17,6 +17,8 @@ import { ModesPage } from '@/sections/ModesPage';
 import { PanelPage } from '@/sections/PanelPage';
 import { FullInterviewPage } from '@/sections/FullInterviewPage';
 import { ProfilePage } from '@/sections/ProfilePage';
+import { AboutPage } from '@/sections/AboutPage';
+import { ContactPage } from '@/sections/ContactPage';
 import './App.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -44,9 +46,15 @@ function AppContent() {
       return <InterviewSetup />;
     }
 
+
+
     switch (currentPage) {
       case 'landing':
         return <LandingPage />;
+      case 'about':
+        return <AboutPage />;
+      case 'contact':
+        return <ContactPage />;
       case 'login':
       case 'signup':
         return <AuthPage mode={currentPage} />;

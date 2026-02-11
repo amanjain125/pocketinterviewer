@@ -1,10 +1,10 @@
 import { useAppState } from '@/hooks/useAppState';
 import { Button } from '@/components/ui/button';
-import { 
-  LayoutDashboard, 
-  TrendingUp, 
-  Crown, 
-  User, 
+import {
+  LayoutDashboard,
+  TrendingUp,
+  Crown,
+  User,
   Settings,
   LogOut,
   Menu,
@@ -25,9 +25,11 @@ export function Navigation() {
   const getNavItems = () => {
     if (!isAuthenticated) {
       return [
-        { label: 'How it works', page: 'landing' as const, icon: null },
-        { label: 'Pricing', page: 'pro' as const, icon: null },
-        { label: 'FAQ', page: 'landing' as const, icon: null },
+        { label: 'How it works', page: 'landing', section: 'how-it-works', icon: null },
+        { label: 'Pricing', page: 'landing', section: 'pricing', icon: null },
+        { label: 'About Us', page: 'about', icon: null },
+        { label: 'Contact Us', page: 'contact', icon: null },
+        { label: 'FAQ', page: 'landing', section: 'faq', icon: null },
       ];
     }
 
@@ -63,9 +65,9 @@ export function Navigation() {
             className="flex items-center gap-2 group"
           >
             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform overflow-hidden">
-              <img 
-                src="/logo.png" 
-                alt="Pocket Interviewer Logo" 
+              <img
+                src="/logo.png"
+                alt="Pocket Interviewer Logo"
                 className="w-8 h-8 object-contain"
                 onError={(e) => {
                   // Fallback to emoji if image fails to load
@@ -90,7 +92,21 @@ export function Navigation() {
             {navItems.map((item) => (
               <button
                 key={item.label}
-                onClick={() => navigateTo(item.page)}
+                onClick={() => {
+                  if ((item as any).section) {
+                    if (currentPage === 'landing') {
+                      const element = document.getElementById((item as any).section);
+                      if (element) {
+                        element.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    } else {
+                      sessionStorage.setItem('landingScrollTarget', (item as any).section);
+                      navigateTo('landing');
+                    }
+                  } else {
+                    navigateTo(item.page);
+                  }
+                }}
                 className="text-white/70 hover:text-white transition-colors text-sm font-medium"
               >
                 {item.label}
@@ -129,9 +145,9 @@ export function Navigation() {
             className="flex items-center gap-2 group"
           >
             <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform overflow-hidden">
-              <img 
-                src="/logo.png" 
-                alt="Pocket Interviewer Logo" 
+              <img
+                src="/logo.png"
+                alt="Pocket Interviewer Logo"
                 className="w-7 h-7 object-contain"
                 onError={(e) => {
                   // Fallback to emoji if image fails to load
@@ -160,11 +176,10 @@ export function Navigation() {
                 <button
                   key={item.label}
                   onClick={() => navigateTo(item.page)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-sm font-medium ${
-                    isActive 
-                      ? 'bg-[#FF4EC2] text-white' 
-                      : 'text-white/70 hover:text-white hover:bg-white/10'
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-sm font-medium ${isActive
+                    ? 'bg-[#FF4EC2] text-white'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
                 >
                   {Icon && <Icon className="w-4 h-4" />}
                   {item.label}
@@ -218,14 +233,25 @@ export function Navigation() {
                 <button
                   key={item.label}
                   onClick={() => {
-                    navigateTo(item.page);
+                    if ((item as any).section) {
+                      if (currentPage === 'landing') {
+                        const element = document.getElementById((item as any).section);
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      } else {
+                        sessionStorage.setItem('landingScrollTarget', (item as any).section);
+                        navigateTo('landing');
+                      }
+                    } else {
+                      navigateTo(item.page);
+                    }
                     setMobileMenuOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${
-                    isActive 
-                      ? 'bg-[#FF4EC2] text-white' 
-                      : 'text-white/70 hover:text-white hover:bg-white/10'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${isActive
+                    ? 'bg-[#FF4EC2] text-white'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
                 >
                   {Icon && <Icon className="w-5 h-5" />}
                   {item.label}

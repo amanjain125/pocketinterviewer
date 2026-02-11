@@ -10,31 +10,31 @@ export interface User {
   joinedAt: Date;
 }
 
-export type Domain = 
-  | 'computer_science' 
-  | 'civil' 
-  | 'ai_ml' 
-  | 'mechanical' 
-  | 'electrical' 
+export type Domain =
+  | 'computer_science'
+  | 'civil'
+  | 'ai_ml'
+  | 'mechanical'
+  | 'electrical'
   | 'others';
 
 export type PlanType = 'freemium' | 'advanced' | 'full';
 
 // Interview Types
-export type InterviewType = 
-  | 'behavioral' 
-  | 'technical' 
-  | 'rapid_fire' 
-  | 'situational' 
+export type InterviewType =
+  | 'behavioral'
+  | 'technical'
+  | 'rapid_fire'
+  | 'situational'
   | 'hr_basics';
 
 export type DifficultyLevel = 'easy' | 'medium' | 'hard';
 
-export type InterviewMode = 
-  | 'normal' 
-  | 'stress' 
-  | 'distraction' 
-  | 'panel' 
+export type InterviewMode =
+  | 'normal'
+  | 'stress'
+  | 'distraction'
+  | 'panel'
   | 'full';
 
 export interface InterviewConfig {
@@ -127,12 +127,12 @@ export interface Education {
 }
 
 // Full Interview Round Types
-export type InterviewRound = 
-  | 'introduction' 
-  | 'project' 
-  | 'technical' 
-  | 'behavioral' 
-  | 'rapid_fire' 
+export type InterviewRound =
+  | 'introduction'
+  | 'project'
+  | 'technical'
+  | 'behavioral'
+  | 'rapid_fire'
   | 'closing';
 
 export interface FullInterviewSession extends InterviewSession {
@@ -195,24 +195,27 @@ export interface TrendPoint {
 }
 
 // Navigation Types
-export type Page = 
-  | 'landing' 
-  | 'login' 
-  | 'signup' 
-  | 'domain-select' 
-  | 'dashboard' 
-  | 'interview' 
-  | 'progress' 
-  | 'pro' 
-  | 'profile' 
-  | 'modes' 
-  | 'panel' 
-  | 'full-interview';
+export type Page =
+  | 'landing'
+  | 'login'
+  | 'signup'
+  | 'domain-select'
+  | 'dashboard'
+  | 'interview'
+  | 'progress'
+  | 'pro'
+  | 'profile'
+  | 'modes'
+  | 'panel'
+  | 'full-interview'
+  | 'about'
+  | 'contact';
 
 // UI Types
 export interface NavItem {
   label: string;
   page: Page;
+  section?: string;
   requiresAuth: boolean;
   planRequired?: PlanType[];
 }
