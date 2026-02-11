@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useAppState } from '@/hooks/useAppState';
 import { Button } from '@/components/ui/button';
-import { 
-  MessageSquare, 
-  Code, 
-  Zap, 
-  Theater, 
+import {
+  MessageSquare,
+  Code,
+  Zap,
+  Theater,
   Users,
   ArrowLeft,
   Clock,
@@ -14,37 +14,37 @@ import {
 import type { InterviewType, DifficultyLevel } from '@/types';
 
 const interviewTypes: { id: InterviewType; label: string; icon: React.ElementType; description: string; duration: string }[] = [
-  { 
-    id: 'behavioral', 
-    label: 'Behavioral Round', 
+  {
+    id: 'behavioral',
+    label: 'Behavioral Round',
     icon: MessageSquare,
     description: '"Tell me about a time..." questions with follow-ups',
     duration: '3-5 min'
   },
-  { 
-    id: 'technical', 
-    label: 'Technical Round', 
+  {
+    id: 'technical',
+    label: 'Technical Round',
     icon: Code,
     description: 'Domain-specific technical questions',
     duration: '5-7 min'
   },
-  { 
-    id: 'rapid_fire', 
-    label: 'Rapid Fire', 
+  {
+    id: 'rapid_fire',
+    label: 'Rapid Fire',
     icon: Zap,
     description: 'Quick Q&A to build speed and clarity',
     duration: '2-3 min'
   },
-  { 
-    id: 'situational', 
-    label: 'Situational Questions', 
+  {
+    id: 'situational',
+    label: 'Situational Questions',
     icon: Theater,
     description: 'Handle pressure, conflict, and deadlines',
     duration: '4-6 min'
   },
-  { 
-    id: 'hr_basics', 
-    label: 'HR Basics', 
+  {
+    id: 'hr_basics',
+    label: 'HR Basics',
     icon: Users,
     description: 'Salary, relocation, and career goals',
     duration: '3-4 min'
@@ -52,21 +52,21 @@ const interviewTypes: { id: InterviewType; label: string; icon: React.ElementTyp
 ];
 
 const difficultyLevels: { id: DifficultyLevel; label: string; description: string; color: string }[] = [
-  { 
-    id: 'easy', 
-    label: 'Easy', 
+  {
+    id: 'easy',
+    label: 'Easy',
     description: 'Fundamental questions to build confidence',
     color: 'bg-green-500'
   },
-  { 
-    id: 'medium', 
-    label: 'Medium', 
+  {
+    id: 'medium',
+    label: 'Medium',
     description: 'Standard interview difficulty',
     color: 'bg-yellow-500'
   },
-  { 
-    id: 'hard', 
-    label: 'Hard', 
+  {
+    id: 'hard',
+    label: 'Hard',
     description: 'Challenging questions for experts',
     color: 'bg-red-500'
   },
@@ -82,22 +82,27 @@ export function InterviewSetup() {
     if (!selectedType) return;
 
     setIsLoading(true);
-    
-    // Set interview config
+
+    // Create interview config
     const typeConfig = interviewTypes.find(t => t.id === selectedType);
-    setInterviewConfig({
+    const newConfig = {
       type: selectedType,
       difficulty: selectedDifficulty,
-      mode: 'normal',
+      mode: 'normal' as const,
       duration: typeConfig ? parseInt(typeConfig.duration) : 5,
-    });
+    };
+
+    // Update state for consistency
+    setInterviewConfig(newConfig);
 
     // Simulate loading
     await new Promise(resolve => setTimeout(resolve, 800));
-    
+
     setIsLoading(false);
     setShowInterviewSetup(false);
-    startInterview();
+
+    // Start interview immediately with the config
+    startInterview(newConfig);
   };
 
   return (
@@ -143,16 +148,14 @@ export function InterviewSetup() {
                 <button
                   key={type.id}
                   onClick={() => setSelectedType(type.id)}
-                  className={`relative p-5 rounded-2xl border-2 text-left transition-all duration-300 ${
-                    isSelected
+                  className={`relative p-5 rounded-2xl border-2 text-left transition-all duration-300 ${isSelected
                       ? 'border-[#FF4EC2] bg-[#FF4EC2]/10'
                       : 'border-white/10 bg-[#4B2086] hover:border-white/30'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start justify-between mb-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                      isSelected ? 'bg-[#FF4EC2]' : 'bg-white/10'
-                    }`}>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSelected ? 'bg-[#FF4EC2]' : 'bg-white/10'
+                      }`}>
                       <Icon className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex items-center gap-1 text-white/40 text-xs">
@@ -179,11 +182,10 @@ export function InterviewSetup() {
                 <button
                   key={level.id}
                   onClick={() => setSelectedDifficulty(level.id)}
-                  className={`flex-1 p-4 rounded-2xl border-2 text-left transition-all duration-300 ${
-                    isSelected
+                  className={`flex-1 p-4 rounded-2xl border-2 text-left transition-all duration-300 ${isSelected
                       ? 'border-[#FF4EC2] bg-[#FF4EC2]/10'
                       : 'border-white/10 bg-[#4B2086] hover:border-white/30'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <div className={`w-3 h-3 rounded-full ${level.color}`} />

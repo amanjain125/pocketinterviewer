@@ -30,7 +30,7 @@ interface AppState {
   currentInterview: InterviewSession | null;
   interviewConfig: InterviewConfig | null;
   setInterviewConfig: (config: InterviewConfig) => void;
-  startInterview: () => void;
+  startInterview: (config?: InterviewConfig) => void;
   endInterview: (feedback: InterviewFeedback) => void;
 
   // Progress
@@ -92,7 +92,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     const result = await authService.login({ email, password });
-    
+
     if (result.success) {
       setUser(result.user);
       setIsAuthenticated(true);
@@ -106,7 +106,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const signup = useCallback(async (name: string, email: string, profession: string, password: string): Promise<boolean> => {
     const result = await authService.register({ name, email, profession, password });
-    
+
     if (result.success) {
       setUser(result.user);
       setIsAuthenticated(true);
@@ -156,12 +156,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
-  const startInterview = useCallback(() => {
-    if (interviewConfig && user) {
+  const startInterview = useCallback((config?: InterviewConfig) => {
+    const configToUse = config || interviewConfig;
+    if (configToUse && user) {
       const newSession: InterviewSession = {
         id: Date.now().toString(),
         userId: user.id,
-        config: interviewConfig,
+        config: configToUse,
         questions: [],
         answers: [],
         startedAt: new Date(),
